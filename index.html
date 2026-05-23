@@ -690,7 +690,120 @@ body.admin-mode .upload-row { display: flex; }
 .delete-pdf-btn:hover { color: var(--red); }
 body.admin-mode .delete-pdf-btn { display: inline-flex; }
 
-/* ── ADD TASK MODAL ── */
+/* ── TICKER ── */
+.ticker-wrap {
+  background: linear-gradient(135deg, #1864ab, #3b5bdb);
+  border-radius: 12px;
+  margin: 0 0 1.1rem;
+  padding: 0.7rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(59,91,219,0.15);
+}
+.ticker-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  background: rgba(255,255,255,0.2);
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  flex-shrink: 0;
+}
+.ticker-track {
+  overflow: hidden;
+  flex: 1;
+  position: relative;
+}
+.ticker-inner {
+  display: flex;
+  gap: 2rem;
+  animation: ticker-scroll 18s linear infinite;
+  white-space: nowrap;
+}
+.ticker-inner:hover { animation-play-state: paused; }
+.ticker-item {
+  font-size: 0.78rem;
+  color: white;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+.ticker-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* ── DESCRIPCION TAREA ── */
+.desc-block {
+  background: var(--paper2);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  position: relative;
+}
+.desc-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: var(--ink2);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.desc-text {
+  font-size: 0.85rem;
+  color: var(--ink);
+  line-height: 1.6;
+  min-height: 2rem;
+  white-space: pre-wrap;
+}
+.desc-text.empty { color: var(--muted); font-style: italic; }
+.desc-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  color: var(--ink);
+  line-height: 1.6;
+  resize: none;
+  min-height: 80px;
+  display: none;
+}
+body.admin-mode .desc-text { display: none; }
+body.admin-mode .desc-textarea { display: block; }
+.desc-save-btn {
+  display: none;
+  margin-top: 0.6rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.desc-save-btn:hover { background: #2f4dcc; }
+body.admin-mode .desc-save-btn { display: inline-flex; }
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -857,6 +970,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     </div>
     <div class="home-stats" id="home-stats"></div>
   </div>
+  <div id="ticker-wrap-container"></div>
   <div class="courses-list" id="courses-list"></div>
 </div>
 
@@ -893,6 +1007,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     <div class="task-hero-meta" id="task-hero-meta"></div>
   </div>
   <div class="task-blocks">
+
+    <!-- BLOQUE 0: Descripción -->
+    <div class="desc-block">
+      <div class="desc-label">📝 Descripción</div>
+      <div class="desc-text" id="desc-text">Sin descripción.</div>
+      <textarea class="desc-textarea" id="desc-textarea" placeholder="Escribí los detalles de la tarea, consignas, links, etc..." rows="4"></textarea>
+      <button class="desc-save-btn" onclick="saveDescription()">💾 Guardar descripción</button>
+    </div>
 
     <!-- BLOQUE 1: PDF Teoría -->
     <div class="block">
@@ -1027,6 +1149,7 @@ async function dbInsertTask(task) {
       course_id: task.course_id,
       name: task.name,
       deadline: task.deadline,
+      description: task.description || '',
       pdfs: task.pdfs,
     }),
   });
@@ -1064,6 +1187,7 @@ const COURSES = [
   { id: 'java',    name: 'Java',                           icon: '☕', color: '#e67700', bg: '#fff3e0' },
   { id: 'ads',     name: 'ADS',                            icon: '📐', color: '#7048e8', bg: '#f3f0ff' },
   { id: 'bdatos',  name: 'Diseño de Base de Datos',        icon: '🗄️', color: '#0c8599', bg: '#e3fafc' },
+  { id: 'bdatos2', name: 'Base de Datos',                  icon: '🗃️', color: '#1864ab', bg: '#e7f5ff' },
   { id: 'innova',  name: 'Fundamentos de Innovación Tec.', icon: '💡', color: '#2f9e44', bg: '#ebfbee' },
 ];
 
@@ -1084,6 +1208,7 @@ function buildTasksMap(rows) {
       id: r.id,
       name: r.name,
       deadline: r.deadline,
+      description: r.description || '',
       pdfs: r.pdfs || { teoria:[], tarea:[], adjuntos:[] },
     });
   });
@@ -1165,10 +1290,13 @@ function renderHome() {
     new Date().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
   let total = 0, urgent = 0;
+  const allTasks = [];
   for (const cid in tasks) {
     (tasks[cid] || []).forEach(t => {
       total++;
       if (daysLeft(t.deadline) <= 1) urgent++;
+      const c = COURSES.find(x => x.id === cid);
+      allTasks.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, color: c ? c.color : '#888' });
     });
   }
   document.getElementById('home-stats').innerHTML = `
@@ -1176,6 +1304,30 @@ function renderHome() {
     <div class="stat-pill">📋 <strong>${total}</strong> tareas</div>
     ${urgent > 0 ? `<div class="stat-pill urgent">⚠ <strong>${urgent}</strong> urgente${urgent!==1?'s':''}</div>` : ''}
   `;
+
+  // Ticker
+  const ticker = document.getElementById('ticker-wrap-container');
+  if (allTasks.length === 0) {
+    ticker.innerHTML = '';
+  } else {
+    const sorted = allTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+    const items = sorted.map(t => {
+      const d = daysLeft(t.deadline);
+      const label = d === 0 ? '¡hoy!' : d === 1 ? '1 día' : `${d} días`;
+      return `<div class="ticker-item">
+        <div class="ticker-dot" style="background:${t.color}"></div>
+        ${t.courseIcon} <strong>${t.name}</strong> — ${label}
+      </div>`;
+    }).join('');
+    // Duplicate for infinite loop
+    ticker.innerHTML = `
+      <div class="ticker-wrap">
+        <div class="ticker-label">📋 Pendientes</div>
+        <div class="ticker-track">
+          <div class="ticker-inner">${items}${items}</div>
+        </div>
+      </div>`;
+  }
 
   document.getElementById('courses-list').innerHTML = COURSES.map(c => {
     const ct = tasks[c.id] || [];
@@ -1260,11 +1412,16 @@ function openTask(cid, tid) {
     <span style="font-size:0.72rem;color:var(--muted)">${c.icon} ${c.name}</span>
   `;
 
+  // Description
+  const desc = task.description || '';
+  document.getElementById('desc-text').textContent = desc || 'Sin descripción.';
+  document.getElementById('desc-text').classList.toggle('empty', !desc);
+  document.getElementById('desc-textarea').value = desc;
+
   renderPdfBlock('teoria',   task);
   renderPdfBlock('tarea',    task);
   renderPdfBlock('adjuntos', task);
 
-  // reset file inputs
   ['teoria','tarea','adjuntos'].forEach(k => {
     const el = document.getElementById('input-'+k);
     if (el) el.value = '';
@@ -1275,6 +1432,19 @@ function openTask(cid, tid) {
   });
 
   showScreen('task');
+}
+
+async function saveDescription() {
+  const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
+  const desc = document.getElementById('desc-textarea').value.trim();
+  task.description = desc;
+  try {
+    await dbUpdateTask(activeTaskId, { description: desc });
+    document.getElementById('desc-text').textContent = desc || 'Sin descripción.';
+    document.getElementById('desc-text').classList.toggle('empty', !desc);
+  } catch(e) {
+    alert('Error al guardar: ' + e.message);
+  }
 }
 
 function renderPdfBlock(type, task) {
@@ -1426,11 +1596,12 @@ async function saveTask() {
       course_id: activeCourseId,
       name,
       deadline: date,
+      description: '',
       pdfs: { teoria:[], tarea:[], adjuntos:[] },
     };
     await dbInsertTask(newTask);
     if (!tasks[activeCourseId]) tasks[activeCourseId] = [];
-    tasks[activeCourseId].push({ id: newTask.id, name, deadline: date, pdfs: newTask.pdfs });
+    tasks[activeCourseId].push({ id: newTask.id, name, deadline: date, description: '', pdfs: newTask.pdfs });
     closeAddModalDirect();
     renderCourse(activeCourseId);
     renderHome();
