@@ -27,6 +27,8 @@
   --purple: #7048e8;
   --pink: #e64980;
   --teal: #0c8599;
+  --expo: #7048e8;
+  --expo-light: #f3f0ff;
   --r: 12px;
   --shadow: 0 2px 12px rgba(0,0,0,0.08);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
@@ -41,22 +43,6 @@ body {
   font-family: 'Nunito', sans-serif;
   min-height: 100vh;
   overflow-x: hidden;
-}
-
-.notebook-bg {
-  background-image: linear-gradient(var(--line-blue) 1px, transparent 1px);
-  background-size: 100% 32px;
-  background-position: 0 28px;
-  position: relative;
-}
-.notebook-bg::before {
-  content: '';
-  position: absolute;
-  left: 64px;
-  top: 0; bottom: 0;
-  width: 2px;
-  background: rgba(255,100,100,0.25);
-  pointer-events: none;
 }
 
 .screen {
@@ -131,6 +117,7 @@ body {
 }
 body.admin-mode .topbar-action { display: block; }
 
+/* ── HOME ── */
 #screen-home { background: var(--bg); }
 
 .home-header {
@@ -187,6 +174,7 @@ body.admin-mode .topbar-action { display: block; }
   gap: 0.6rem;
   overflow-x: auto;
   padding-bottom: 0.2rem;
+  flex-wrap: wrap;
 }
 
 .stat-pill {
@@ -205,7 +193,149 @@ body.admin-mode .topbar-action { display: block; }
 .stat-pill strong { color: var(--ink); font-weight: 700; }
 .stat-pill.urgent { background: var(--red-light); border-color: #ffc9c9; color: var(--red); }
 .stat-pill.urgent strong { color: var(--red); }
+.stat-pill.expo { background: var(--expo-light); border-color: #d9d0ff; color: var(--expo); }
+.stat-pill.expo strong { color: var(--expo); }
 
+/* ── BANNER ── */
+.home-banner {
+  margin: 1.2rem 1.2rem 0;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  height: 140px;
+  border: 2px solid var(--line);
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+}
+.home-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.home-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(26,26,46,0.55) 0%, rgba(26,26,46,0.1) 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 0.9rem 1.1rem;
+}
+.home-banner-text {
+  font-family: 'Caveat', cursive;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  text-shadow: 0 1px 6px rgba(0,0,0,0.4);
+  line-height: 1.3;
+}
+.home-banner.no-tasks img {
+  object-fit: contain;
+  background: var(--paper2);
+}
+.home-banner.no-tasks .home-banner-overlay {
+  background: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.home-banner.no-tasks .home-banner-text {
+  color: var(--green);
+  text-shadow: none;
+  font-size: 1.3rem;
+  text-align: center;
+}
+
+/* ── TICKER ── */
+.ticker-wrap {
+  background: linear-gradient(135deg, #1864ab, #3b5bdb);
+  border-radius: 12px;
+  margin: 1.1rem 1.2rem 0;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(59,91,219,0.15);
+  min-height: 80px;
+}
+.ticker-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  background: rgba(255,255,255,0.15);
+  padding: 0 0.9rem;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid rgba(255,255,255,0.15);
+}
+.ticker-track {
+  overflow: hidden;
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.ticker-inner {
+  display: flex;
+  gap: 0;
+  animation: ticker-scroll 22s linear infinite;
+  white-space: nowrap;
+  align-items: center;
+}
+.ticker-inner:hover { animation-play-state: paused; }
+
+.ticker-item {
+  display: inline-flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.6rem 1.2rem;
+  cursor: pointer;
+  border-right: 1px solid rgba(255,255,255,0.12);
+  transition: background 0.2s;
+  min-width: 160px;
+  flex-shrink: 0;
+  vertical-align: middle;
+  white-space: normal;
+}
+.ticker-item:hover { background: rgba(255,255,255,0.1); }
+
+.ticker-task-name {
+  font-size: 0.85rem;
+  color: white;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 0.15rem;
+}
+.ticker-task-course {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.7);
+  font-weight: 400;
+}
+.ticker-task-days {
+  font-size: 0.62rem;
+  font-weight: 800;
+  padding: 0.1rem 0.45rem;
+  border-radius: 100px;
+  display: inline-block;
+  margin-top: 0.2rem;
+  background: rgba(255,255,255,0.2);
+  color: white;
+}
+.ticker-task-days.danger { background: rgba(255,100,100,0.4); }
+.ticker-task-days.today  { background: rgba(255,60,60,0.7); animation: blink 1.4s infinite; }
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+/* ── COURSES LIST ── */
 .courses-list {
   padding: 1.2rem;
   display: flex;
@@ -289,6 +419,7 @@ body.admin-mode .topbar-action { display: block; }
 
 .chevron { color: var(--muted); font-size: 1rem; }
 
+/* ── COURSE SCREEN ── */
 #screen-course { background: var(--bg); }
 
 .course-hero {
@@ -330,6 +461,7 @@ body.admin-mode .topbar-action { display: block; }
   background: var(--line);
 }
 
+/* ── TASK CARD ── */
 .task-card {
   background: var(--paper);
   border: 2px solid var(--line);
@@ -393,7 +525,6 @@ body.admin-mode .topbar-action { display: block; }
 .days-warn { background: var(--orange-light); color: var(--orange); }
 .days-danger { background: var(--red-light); color: var(--red); }
 .days-today { background: var(--red); color: white; animation: blink 1.4s infinite; }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.6} }
 
 .has-pdf-tag {
   font-size: 0.6rem;
@@ -401,6 +532,23 @@ body.admin-mode .topbar-action { display: block; }
   background: var(--accent-light);
   padding: 0.15rem 0.5rem;
   border-radius: 100px;
+}
+
+.cat-tag-tarea {
+  font-size: 0.6rem;
+  color: var(--teal);
+  background: #e3fafc;
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  font-weight: 700;
+}
+.cat-tag-exposicion {
+  font-size: 0.6rem;
+  color: var(--expo);
+  background: var(--expo-light);
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  font-weight: 700;
 }
 
 .task-delete-btn {
@@ -444,6 +592,7 @@ body.admin-mode .task-delete-btn { display: flex; }
 .add-task-btn:hover { background: var(--accent); color: white; }
 body.admin-mode .add-task-btn { display: block; }
 
+/* ── TASK DETAIL ── */
 #screen-task { background: var(--bg); }
 
 .task-hero {
@@ -668,60 +817,7 @@ body.admin-mode .upload-row { display: flex; }
 .delete-pdf-btn:hover { color: var(--red); }
 body.admin-mode .delete-pdf-btn { display: inline-flex; }
 
-.ticker-wrap {
-  background: linear-gradient(135deg, #1864ab, #3b5bdb);
-  border-radius: 12px;
-  margin: 0 0 1.1rem;
-  padding: 0.7rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(59,91,219,0.15);
-}
-.ticker-label {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: white;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  white-space: nowrap;
-  background: rgba(255,255,255,0.2);
-  border-radius: 6px;
-  padding: 0.25rem 0.5rem;
-  flex-shrink: 0;
-}
-.ticker-track {
-  overflow: hidden;
-  flex: 1;
-  position: relative;
-}
-.ticker-inner {
-  display: flex;
-  gap: 2rem;
-  animation: ticker-scroll 18s linear infinite;
-  white-space: nowrap;
-}
-.ticker-inner:hover { animation-play-state: paused; }
-.ticker-item {
-  font-size: 0.78rem;
-  color: white;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-shrink: 0;
-}
-.ticker-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-@keyframes ticker-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
-}
-
+/* ── DESCRIPTION BLOCK ── */
 .desc-block {
   background: var(--paper2);
   border: 2px solid var(--line);
@@ -781,6 +877,7 @@ body.admin-mode .desc-textarea { display: block; }
 .desc-save-btn:hover { background: #2f4dcc; }
 body.admin-mode .desc-save-btn { display: inline-flex; }
 
+/* ── MODALS ── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -883,6 +980,40 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 }
 .btn-confirm:hover { background: #2f4dcc; }
 
+/* Category radio buttons */
+.cat-radio-group {
+  display: flex;
+  gap: 0.7rem;
+}
+.cat-radio-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.8rem;
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: all 0.2s;
+  color: var(--ink2);
+  background: var(--paper2);
+}
+.cat-radio-label input { display: none; }
+.cat-radio-label.selected-tarea {
+  border-color: var(--teal);
+  background: #e3fafc;
+  color: var(--teal);
+}
+.cat-radio-label.selected-exposicion {
+  border-color: var(--expo);
+  background: var(--expo-light);
+  color: var(--expo);
+}
+
+/* Password modal */
 .pw-overlay {
   position: fixed;
   inset: 0;
@@ -943,7 +1074,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     </div>
     <div class="home-stats" id="home-stats"></div>
   </div>
-  <div style="padding: 1.2rem 1.2rem 0" id="ticker-wrap-container"></div>
+  <div id="home-banner-container"></div>
+  <div id="ticker-wrap-container"></div>
   <div class="courses-list" id="courses-list"></div>
 </div>
 
@@ -959,7 +1091,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     <div class="course-hero-sub" id="course-hero-sub"></div>
   </div>
   <div class="tasks-section">
-    <div class="section-title">📋 tareas pendientes</div>
     <div id="tasks-list"></div>
     <button class="add-task-btn" onclick="openAddModal()">＋ agregar tarea</button>
   </div>
@@ -985,42 +1116,42 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
       <button class="desc-save-btn" id="desc-save-btn" onclick="saveDescription()">💾 Guardar descripción</button>
     </div>
 
-    <!-- PDF Teoría -->
+    <!-- PDF/PPTX Teoría -->
     <div class="block">
       <div class="block-header">
         <div class="block-icon" style="background:#e8edff">📘</div>
-        <div class="block-title">PDF Teoría</div>
+        <div class="block-title">Archivos Teoría</div>
       </div>
       <div class="block-body">
         <div id="block-teoria-list"></div>
         <div class="upload-row" id="upload-row-teoria">
           <label class="upload-file-label">
-            📎 Elegir PDF
-            <input type="file" accept="application/pdf" id="input-teoria" onchange="onFileChosen('teoria')">
+            📎 Elegir PDF o PPTX
+            <input type="file" accept="application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,.pdf" id="input-teoria" onchange="onFileChosen('teoria')">
           </label>
           <div class="upload-file-name" id="fname-teoria">Ningún archivo elegido</div>
           <div class="upload-progress" id="prog-teoria"><div class="upload-progress-bar" id="progbar-teoria"></div></div>
-          <button class="upload-save-btn" id="btn-teoria" onclick="uploadPdf('teoria')" disabled>⬆ Subir</button>
+          <button class="upload-save-btn" id="btn-teoria" onclick="uploadFile('teoria')" disabled>⬆ Subir</button>
         </div>
       </div>
     </div>
 
-    <!-- PDF Tarea -->
+    <!-- PDF/PPTX Tarea -->
     <div class="block">
       <div class="block-header">
         <div class="block-icon" style="background:#ebfbee">📗</div>
-        <div class="block-title">PDF Tarea</div>
+        <div class="block-title">Archivos Tarea</div>
       </div>
       <div class="block-body">
         <div id="block-tarea-list"></div>
         <div class="upload-row" id="upload-row-tarea">
           <label class="upload-file-label">
-            📎 Elegir PDF
-            <input type="file" accept="application/pdf" id="input-tarea" onchange="onFileChosen('tarea')">
+            📎 Elegir PDF o PPTX
+            <input type="file" accept="application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,.pdf" id="input-tarea" onchange="onFileChosen('tarea')">
           </label>
           <div class="upload-file-name" id="fname-tarea">Ningún archivo elegido</div>
           <div class="upload-progress" id="prog-tarea"><div class="upload-progress-bar" id="progbar-tarea"></div></div>
-          <button class="upload-save-btn" id="btn-tarea" onclick="uploadPdf('tarea')" disabled>⬆ Subir</button>
+          <button class="upload-save-btn" id="btn-tarea" onclick="uploadFile('tarea')" disabled>⬆ Subir</button>
         </div>
       </div>
     </div>
@@ -1029,18 +1160,18 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     <div class="block">
       <div class="block-header">
         <div class="block-icon" style="background:#fff3e0">📎</div>
-        <div class="block-title">Archivos adjuntos</div>
+        <div class="block-title">Archivos Adjuntos</div>
       </div>
       <div class="block-body">
         <div id="block-adjuntos-list"></div>
         <div class="upload-row" id="upload-row-adjuntos">
           <label class="upload-file-label">
-            📎 Elegir PDF
-            <input type="file" accept="application/pdf" id="input-adjuntos" onchange="onFileChosen('adjuntos')">
+            📎 Elegir PDF o PPTX
+            <input type="file" accept="application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,.pdf" id="input-adjuntos" onchange="onFileChosen('adjuntos')">
           </label>
           <div class="upload-file-name" id="fname-adjuntos">Ningún archivo elegido</div>
           <div class="upload-progress" id="prog-adjuntos"><div class="upload-progress-bar" id="progbar-adjuntos"></div></div>
-          <button class="upload-save-btn" id="btn-adjuntos" onclick="uploadPdf('adjuntos')" disabled>⬆ Subir</button>
+          <button class="upload-save-btn" id="btn-adjuntos" onclick="uploadFile('adjuntos')" disabled>⬆ Subir</button>
         </div>
       </div>
     </div>
@@ -1054,12 +1185,23 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     <div class="modal-handle"></div>
     <div class="modal-title">✏️ nueva tarea</div>
     <div class="form-group">
-      <label class="form-label">Nombre de la tarea</label>
+      <label class="form-label">Nombre</label>
       <input class="form-control" id="f-name" type="text" placeholder="ej: Trabajo Práctico N°2">
     </div>
     <div class="form-group">
       <label class="form-label">Fecha límite</label>
       <input class="form-control" id="f-date" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Categoría</label>
+      <div class="cat-radio-group" id="cat-radio-group">
+        <label class="cat-radio-label selected-tarea" id="lbl-tarea" onclick="selectCat('tarea')">
+          <input type="radio" name="categoria" value="tarea" checked> 📋 Tarea
+        </label>
+        <label class="cat-radio-label" id="lbl-exposicion" onclick="selectCat('exposicion')">
+          <input type="radio" name="categoria" value="exposicion"> 🎤 Exposición
+        </label>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeAddModalDirect()">Cancelar</button>
@@ -1099,6 +1241,10 @@ const SB_HEADERS = {
   'Prefer': 'return=representation',
 };
 
+// URLs para el banner
+const BANNER_IMG_URL = 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80';
+const BANNER_GIF_URL = 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif';
+
 // ── API helpers ──────────────────────────────
 async function dbGetTasks() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?select=*`, { headers: SB_HEADERS });
@@ -1117,20 +1263,17 @@ async function dbInsertTask(task) {
       deadline: task.deadline,
       description: task.description || '',
       pdfs: task.pdfs,
+      categoria: task.categoria || 'tarea',
     }),
   });
   if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Error al guardar'); }
   return res.json();
 }
 
-// ── FIX: Prefer return=minimal para PATCH ──
 async function dbUpdateTask(id, fields) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, {
     method: 'PATCH',
-    headers: {
-      ...SB_HEADERS,
-      'Prefer': 'return=minimal',
-    },
+    headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
     body: JSON.stringify(fields),
   });
   if (!res.ok) {
@@ -1182,6 +1325,7 @@ function buildTasksMap(rows) {
       deadline: r.deadline,
       description: r.description || '',
       pdfs: r.pdfs || { teoria:[], tarea:[], adjuntos:[] },
+      categoria: r.categoria || 'tarea',
     });
   });
   return map;
@@ -1236,6 +1380,16 @@ function hasPdfs(task) {
   return (task.pdfs.teoria.length + task.pdfs.tarea.length + task.pdfs.adjuntos.length) > 0;
 }
 
+function getFileIcon(path) {
+  if (path.toLowerCase().endsWith('.pptx')) return '📊';
+  return '📄';
+}
+
+function getFileType(path) {
+  if (path.toLowerCase().endsWith('.pptx')) return 'PPTX';
+  return 'PDF';
+}
+
 // ═══════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════
@@ -1260,22 +1414,51 @@ function renderHome() {
   document.getElementById('home-date').textContent =
     new Date().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-  let total = 0, urgent = 0;
+  let total = 0, urgent = 0, exposiciones = 0;
   const allTasks = [];
   for (const cid in tasks) {
     (tasks[cid] || []).forEach(t => {
       total++;
       if (daysLeft(t.deadline) <= 1) urgent++;
+      if ((t.categoria || 'tarea') === 'exposicion') exposiciones++;
       const c = COURSES.find(x => x.id === cid);
-      allTasks.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, color: c ? c.color : '#888' });
+      allTasks.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, courseId: cid, color: c ? c.color : '#888' });
     });
   }
+
+  const tareasCount = total - exposiciones;
   document.getElementById('home-stats').innerHTML = `
     <div class="stat-pill">📚 <strong>${COURSES.length}</strong> cursos</div>
-    <div class="stat-pill">📋 <strong>${total}</strong> tareas</div>
+    ${tareasCount > 0 ? `<div class="stat-pill">📋 <strong>${tareasCount}</strong> tarea${tareasCount!==1?'s':''}</div>` : ''}
+    ${exposiciones > 0 ? `<div class="stat-pill expo">🎤 <strong>${exposiciones}</strong> exposición${exposiciones!==1?'es':''}</div>` : ''}
+    ${total === 0 ? `<div class="stat-pill">📋 <strong>0</strong> tareas</div>` : ''}
     ${urgent > 0 ? `<div class="stat-pill urgent">⚠ <strong>${urgent}</strong> urgente${urgent!==1?'s':''}</div>` : ''}
   `;
 
+  // ── Banner ──
+  const bannerContainer = document.getElementById('home-banner-container');
+  if (allTasks.length === 0) {
+    bannerContainer.innerHTML = `
+      <div class="home-banner no-tasks" style="margin:1.2rem 1.2rem 0">
+        <img src="${BANNER_GIF_URL}" alt="Sin tareas pendientes">
+        <div class="home-banner-overlay">
+          <div class="home-banner-text">🎉 ¡Todo al día!<br>No tenés tareas pendientes</div>
+        </div>
+      </div>`;
+  } else {
+    const nextTask = allTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline))[0];
+    const d = daysLeft(nextTask.deadline);
+    const urgMsg = d === 0 ? '¡Entrega hoy!' : d === 1 ? '¡Entrega mañana!' : `${total} tarea${total!==1?'s':''} pendiente${total!==1?'s':''}`;
+    bannerContainer.innerHTML = `
+      <div class="home-banner" style="margin:1.2rem 1.2rem 0">
+        <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
+        <div class="home-banner-overlay">
+          <div class="home-banner-text">📚 ${urgMsg}<br><span style="font-size:0.9rem;opacity:0.85">${nextTask.name} · ${nextTask.courseIcon} ${nextTask.courseName}</span></div>
+        </div>
+      </div>`;
+  }
+
+  // ── Ticker ──
   const ticker = document.getElementById('ticker-wrap-container');
   if (allTasks.length === 0) {
     ticker.innerHTML = '';
@@ -1284,13 +1467,16 @@ function renderHome() {
     const items = sorted.map(t => {
       const d = daysLeft(t.deadline);
       const label = d === 0 ? '¡hoy!' : d === 1 ? '1 día' : `${d} días`;
-      return `<div class="ticker-item">
-        <div class="ticker-dot" style="background:${t.color}"></div>
-        ${t.courseIcon} <strong>${t.name}</strong> — ${label}
+      const dayCls = d === 0 ? 'today' : d <= 1 ? 'danger' : '';
+      const cat = (t.categoria || 'tarea') === 'exposicion' ? '🎤' : '📋';
+      return `<div class="ticker-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
+        <div class="ticker-task-name">${cat} ${t.name}</div>
+        <div class="ticker-task-course">(${t.courseName})</div>
+        <span class="ticker-task-days ${dayCls}">${label}</span>
       </div>`;
     }).join('');
     ticker.innerHTML = `
-      <div class="ticker-wrap">
+      <div class="ticker-wrap" style="margin:0.8rem 1.2rem 0">
         <div class="ticker-label">📋 Pendientes</div>
         <div class="ticker-track">
           <div class="ticker-inner">${items}${items}</div>
@@ -1317,6 +1503,11 @@ function renderHome() {
   }).join('');
 }
 
+function openTaskFromTicker(cid, tid) {
+  activeCourseId = cid;
+  openTask(cid, tid);
+}
+
 // ═══════════════════════════════════════════
 // RENDER COURSE
 // ═══════════════════════════════════════════
@@ -1328,38 +1519,60 @@ function openCourse(cid) {
 
 function renderCourse(cid) {
   const c  = COURSES.find(x => x.id === cid);
-  const ct = (tasks[cid] || []).slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+  const all = (tasks[cid] || []).slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+  const tareas = all.filter(t => (t.categoria||'tarea') === 'tarea');
+  const expos  = all.filter(t => (t.categoria||'tarea') === 'exposicion');
 
   document.getElementById('course-topbar-title').textContent = c.name;
   document.getElementById('course-hero-name').textContent = c.icon + ' ' + c.name;
-  document.getElementById('course-hero-sub').textContent =
-    ct.length ? `${ct.length} tarea${ct.length!==1?'s':''} pendiente${ct.length!==1?'s':''}` : 'Sin tareas pendientes';
+
+  const parts = [];
+  if (tareas.length) parts.push(`${tareas.length} tarea${tareas.length!==1?'s':''}`);
+  if (expos.length)  parts.push(`${expos.length} exposición${expos.length!==1?'es':''}`);
+  document.getElementById('course-hero-sub').textContent = parts.length ? parts.join(' · ') + ' pendiente' + (all.length!==1?'s':'') : 'Sin tareas pendientes';
 
   const list = document.getElementById('tasks-list');
-  if (!ct.length) {
+  if (!all.length) {
     list.innerHTML = `<div class="empty-state"><div class="emoji">🎉</div><p>¡Todo al día!</p></div>`;
     return;
   }
 
-  list.innerHTML = ct.map(t => {
-    const d      = daysLeft(t.deadline);
-    const cls    = d <= 1 ? 'urgent' : d <= 3 ? 'warn' : '';
-    const stripe = d <= 1 ? '#ff6b6b' : d <= 3 ? '#ffb347' : c.color;
-    const pdftag = hasPdfs(t) ? '<span class="has-pdf-tag">📎 PDFs</span>' : '';
-    return `<div class="task-card ${cls}" onclick="openTask('${cid}',${t.id})">
-      <div class="task-card-stripe" style="background:${stripe}"></div>
-      <div class="task-card-body">
-        <div class="task-card-name">${t.name}</div>
-        <div class="task-card-meta">
-          <span class="task-date-tag">📅 ${fmtDate(t.deadline)}</span>
-          ${daysChip(d)}
-          ${pdftag}
-        </div>
+  let html = '';
+
+  if (tareas.length) {
+    html += `<div class="section-title">📋 tareas</div>`;
+    html += tareas.map(t => taskCardHTML(t, cid, c)).join('');
+  }
+  if (expos.length) {
+    html += `<div class="section-title" style="margin-top:${tareas.length?'1rem':'0'}">🎤 exposiciones</div>`;
+    html += expos.map(t => taskCardHTML(t, cid, c)).join('');
+  }
+
+  list.innerHTML = html;
+}
+
+function taskCardHTML(t, cid, c) {
+  const d      = daysLeft(t.deadline);
+  const cls    = d <= 1 ? 'urgent' : d <= 3 ? 'warn' : '';
+  const stripe = d <= 1 ? '#ff6b6b' : d <= 3 ? '#ffb347' : c.color;
+  const pdftag = hasPdfs(t) ? '<span class="has-pdf-tag">📎 Archivos</span>' : '';
+  const catTag = (t.categoria||'tarea') === 'exposicion'
+    ? '<span class="cat-tag-exposicion">🎤 Exposición</span>'
+    : '<span class="cat-tag-tarea">📋 Tarea</span>';
+  return `<div class="task-card ${cls}" onclick="openTask('${cid}',${t.id})">
+    <div class="task-card-stripe" style="background:${stripe}"></div>
+    <div class="task-card-body">
+      <div class="task-card-name">${t.name}</div>
+      <div class="task-card-meta">
+        <span class="task-date-tag">📅 ${fmtDate(t.deadline)}</span>
+        ${daysChip(d)}
+        ${catTag}
+        ${pdftag}
       </div>
-      <button class="task-delete-btn" onclick="deleteTask(event,'${cid}',${t.id})">🗑</button>
-      <span style="color:var(--muted);font-size:1rem">›</span>
-    </div>`;
-  }).join('');
+    </div>
+    <button class="task-delete-btn" onclick="deleteTask(event,'${cid}',${t.id})">🗑</button>
+    <span style="color:var(--muted);font-size:1rem">›</span>
+  </div>`;
 }
 
 // ═══════════════════════════════════════════
@@ -1372,12 +1585,16 @@ function openTask(cid, tid) {
   if (!task) return;
   const c = COURSES.find(x => x.id === cid);
   const d = daysLeft(task.deadline);
+  const catTag = (task.categoria||'tarea') === 'exposicion'
+    ? '<span class="cat-tag-exposicion">🎤 Exposición</span>'
+    : '<span class="cat-tag-tarea">📋 Tarea</span>';
 
   document.getElementById('task-topbar-title').textContent = task.name;
   document.getElementById('task-hero-name').textContent    = task.name;
   document.getElementById('task-hero-meta').innerHTML = `
     <span class="task-date-tag" style="font-size:0.75rem">📅 ${fmtDate(task.deadline)}</span>
     ${daysChip(d)}
+    ${catTag}
     <span style="font-size:0.72rem;color:var(--muted)">${c.icon} ${c.name}</span>
   `;
 
@@ -1386,15 +1603,14 @@ function openTask(cid, tid) {
   document.getElementById('desc-text').classList.toggle('empty', !desc);
   document.getElementById('desc-textarea').value = desc;
 
-  // Reset botón guardar descripción
   const saveBtn = document.getElementById('desc-save-btn');
   saveBtn.textContent = '💾 Guardar descripción';
   saveBtn.style.background = '';
   saveBtn.disabled = false;
 
-  renderPdfBlock('teoria',   task);
-  renderPdfBlock('tarea',    task);
-  renderPdfBlock('adjuntos', task);
+  renderFileBlock('teoria',   task);
+  renderFileBlock('tarea',    task);
+  renderFileBlock('adjuntos', task);
 
   ['teoria','tarea','adjuntos'].forEach(k => {
     const el = document.getElementById('input-'+k);
@@ -1408,7 +1624,6 @@ function openTask(cid, tid) {
   showScreen('task');
 }
 
-// ── FIX: saveDescription con feedback visual y manejo de errores ──
 async function saveDescription() {
   const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
   const desc = document.getElementById('desc-textarea').value.trim();
@@ -1436,34 +1651,36 @@ async function saveDescription() {
   }
 }
 
-function renderPdfBlock(type, task) {
+function renderFileBlock(type, task) {
   const list = document.getElementById('block-'+type+'-list');
-  const pdfs = task.pdfs[type] || [];
-  if (!pdfs.length) {
+  const files = task.pdfs[type] || [];
+  if (!files.length) {
     list.innerHTML = `<div class="block-empty">Sin archivos aún</div>`;
     return;
   }
-  list.innerHTML = pdfs.map((pdf, i) => {
-    const url  = publicUrl(pdf);
-    const name = pdf.split('/').pop();
+  list.innerHTML = files.map((file, i) => {
+    const url  = publicUrl(file);
+    const name = file.split('/').pop();
+    const icon = getFileIcon(file);
+    const type_ = getFileType(file);
     return `
     <div class="pdf-item">
-      <div class="pdf-item-icon">📄</div>
+      <div class="pdf-item-icon">${icon}</div>
       <div class="pdf-item-info">
         <div class="pdf-item-name">${name}</div>
-        <div class="pdf-item-sub">PDF</div>
+        <div class="pdf-item-sub">${type_}</div>
       </div>
       <div class="pdf-item-actions">
         <a class="pdf-btn" href="${url}" target="_blank">👁 Ver</a>
         <a class="pdf-btn download" href="${url}" download="${name}">⬇ Descargar</a>
-        <button class="delete-pdf-btn" onclick="deletePdf(event,'${type}',${i})">✕</button>
+        <button class="delete-pdf-btn" onclick="deleteFile(event,'${type}',${i})">✕</button>
       </div>
     </div>`;
   }).join('');
 }
 
 // ═══════════════════════════════════════════
-// FILE UPLOAD — SUPABASE
+// FILE UPLOAD — SUPABASE (PDF + PPTX)
 // ═══════════════════════════════════════════
 function onFileChosen(type) {
   const input = document.getElementById('input-'+type);
@@ -1478,7 +1695,14 @@ function onFileChosen(type) {
   }
 }
 
-async function uploadPdf(type) {
+function getMimeType(file) {
+  if (file.name.toLowerCase().endsWith('.pptx')) {
+    return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
+  }
+  return file.type || 'application/pdf';
+}
+
+async function uploadFile(type) {
   const input   = document.getElementById('input-'+type);
   const btn     = document.getElementById('btn-'+type);
   const prog    = document.getElementById('prog-'+type);
@@ -1488,6 +1712,7 @@ async function uploadPdf(type) {
 
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `${activeCourseId}/${activeTaskId}/${type}/${Date.now()}-${safeName}`;
+  const mime = getMimeType(file);
 
   btn.disabled = true;
   btn.textContent = '⏳ Subiendo...';
@@ -1499,7 +1724,7 @@ async function uploadPdf(type) {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${SUPABASE_ANON}`,
-        'Content-Type': file.type || 'application/pdf',
+        'Content-Type': mime,
         'x-upsert': 'true',
       },
       body: file,
@@ -1515,7 +1740,7 @@ async function uploadPdf(type) {
     await dbUpdateTask(activeTaskId, { pdfs: task.pdfs });
     progbar.style.width = '100%';
 
-    renderPdfBlock(type, task);
+    renderFileBlock(type, task);
     renderCourse(activeCourseId);
 
     input.value = '';
@@ -1533,7 +1758,7 @@ async function uploadPdf(type) {
   }
 }
 
-async function deletePdf(e, type, idx) {
+async function deleteFile(e, type, idx) {
   e.preventDefault(); e.stopPropagation();
   const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
   const path = task.pdfs[type][idx];
@@ -1547,17 +1772,27 @@ async function deletePdf(e, type, idx) {
 
   task.pdfs[type].splice(idx, 1);
   await dbUpdateTask(activeTaskId, { pdfs: task.pdfs }).catch(()=>{});
-  renderPdfBlock(type, task);
+  renderFileBlock(type, task);
   renderCourse(activeCourseId);
 }
 
 // ═══════════════════════════════════════════
 // TASKS CRUD
 // ═══════════════════════════════════════════
+let selectedCat = 'tarea';
+
+function selectCat(cat) {
+  selectedCat = cat;
+  document.getElementById('lbl-tarea').className = 'cat-radio-label' + (cat === 'tarea' ? ' selected-tarea' : '');
+  document.getElementById('lbl-exposicion').className = 'cat-radio-label' + (cat === 'exposicion' ? ' selected-exposicion' : '');
+}
+
 function openAddModal() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('f-name').value = '';
   document.getElementById('f-date').value = today;
+  selectedCat = 'tarea';
+  selectCat('tarea');
   document.getElementById('add-modal').classList.add('open');
   setTimeout(() => document.getElementById('f-name').focus(), 100);
 }
@@ -1586,10 +1821,11 @@ async function saveTask() {
       deadline: date,
       description: '',
       pdfs: { teoria:[], tarea:[], adjuntos:[] },
+      categoria: selectedCat,
     };
     await dbInsertTask(newTask);
     if (!tasks[activeCourseId]) tasks[activeCourseId] = [];
-    tasks[activeCourseId].push({ id: newTask.id, name, deadline: date, description: '', pdfs: newTask.pdfs });
+    tasks[activeCourseId].push({ id: newTask.id, name, deadline: date, description: '', pdfs: newTask.pdfs, categoria: selectedCat });
     closeAddModalDirect();
     renderCourse(activeCourseId);
     renderHome();
