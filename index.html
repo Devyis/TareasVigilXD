@@ -993,24 +993,71 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 
 <script>
 // ═══════════════════════════════════════════
-// CONFIG — cambiá la contraseña acá
+// CONFIG
 // ═══════════════════════════════════════════
 const ADMIN_PASSWORD = 'admin123';
 
 // ═══════════════════════════════════════════
 // SUPABASE CONFIG
 // ═══════════════════════════════════════════
-const SUPABASE_URL    = 'https://ebtehnbffwobpdnmftod.supabase.co';
-const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidGVobmJmZndvYnBkbm1mdG9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0ODM1NzQsImV4cCI6MjA5NTA1OTU3NH0.hzkHQ88Q_GJjH9BZJXkXOj2M3NLP8Sms-QId0jt2N3Y';
-const BUCKET          = 'pdfs';
+const SUPABASE_URL  = 'https://ebtehnbffwobpdnmftod.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidGVobmJmZndvYnBkbm1mdG9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0ODM1NzQsImV4cCI6MjA5NTA1OTU3NH0.hzkHQ88Q_GJjH9BZJXkXOj2M3NLP8Sms-QId0jt2N3Y';
+const BUCKET        = 'pdfs';
 
-// Genera la URL pública de un archivo en Supabase Storage
+const SB_HEADERS = {
+  'apikey': SUPABASE_ANON,
+  'Authorization': `Bearer ${SUPABASE_ANON}`,
+  'Content-Type': 'application/json',
+  'Prefer': 'return=representation',
+};
+
+// ── API helpers ──────────────────────────────
+async function dbGetTasks() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?select=*`, { headers: SB_HEADERS });
+  if (!res.ok) throw new Error('Error cargando tareas');
+  return res.json();
+}
+
+async function dbInsertTask(task) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks`, {
+    method: 'POST',
+    headers: SB_HEADERS,
+    body: JSON.stringify({
+      id: task.id,
+      course_id: task.course_id,
+      name: task.name,
+      deadline: task.deadline,
+      pdfs: task.pdfs,
+    }),
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Error al guardar'); }
+  return res.json();
+}
+
+async function dbUpdateTask(id, fields) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: SB_HEADERS,
+    body: JSON.stringify(fields),
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Error al actualizar'); }
+}
+
+async function dbDeleteTask(id) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { ...SB_HEADERS, 'Prefer': '' },
+  });
+  if (!res.ok) throw new Error('Error al eliminar');
+}
+
 function publicUrl(path) {
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
 
+
 // ═══════════════════════════════════════════
-// CURSOS — cambiá los nombres si querés
+// CURSOS
 // ═══════════════════════════════════════════
 const COURSES = [
   { id: 'logica',  name: 'Lógica de Programación',        icon: '🧠', color: '#3b5bdb', bg: '#e8edff' },
@@ -1021,53 +1068,42 @@ const COURSES = [
 ];
 
 // ═══════════════════════════════════════════
-// DATOS DEMO
-// ═══════════════════════════════════════════
-function makeDemoData() {
-  const add = (d, n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x.toISOString().split('T')[0]; };
-  const t = new Date();
-  return {
-    logica: [
-      { id: 1, name: 'TP N°2 — Estructuras de control', deadline: add(t,3), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
-      { id: 2, name: 'Parcial domiciliario',             deadline: add(t,6), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
-    ],
-    java:   [
-      { id: 3, name: 'Entrega proyecto POO', deadline: add(t,1), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
-    ],
-    ads:    [
-      { id: 4, name: 'Diagrama de casos de uso',  deadline: add(t,0), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
-      { id: 5, name: 'Informe de relevamiento',   deadline: add(t,8), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
-    ],
-    bdatos: [],
-    innova: [
-      { id: 6, name: 'Presentación grupal', deadline: add(t,4), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
-    ],
-  };
-}
-
-// ═══════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════
-let tasks          = JSON.parse(localStorage.getItem('tasks_v2') || 'null') || makeDemoData();
+let tasks          = {}; // { course_id: [task, ...] }
 let isAdmin        = false;
 let activeCourseId = null;
 let activeTaskId   = null;
 
-function save() { localStorage.setItem('tasks_v2', JSON.stringify(tasks)); }
-
-// Auto-borrado: 1 día después de la fecha límite
-function autoDelete() {
-  const today = new Date(); today.setHours(0,0,0,0);
-  let changed = false;
-  for (const cid in tasks) {
-    const before = tasks[cid].length;
-    tasks[cid] = tasks[cid].filter(t => {
-      const dl = new Date(t.deadline + 'T00:00:00');
-      return Math.floor((today - dl) / 86400000) <= 0;
+function buildTasksMap(rows) {
+  const map = {};
+  COURSES.forEach(c => map[c.id] = []);
+  rows.forEach(r => {
+    if (!map[r.course_id]) map[r.course_id] = [];
+    map[r.course_id].push({
+      id: r.id,
+      name: r.name,
+      deadline: r.deadline,
+      pdfs: r.pdfs || { teoria:[], tarea:[], adjuntos:[] },
     });
-    if (tasks[cid].length !== before) changed = true;
+  });
+  return map;
+}
+
+// Auto-borrado: tareas vencidas hace más de 1 día
+async function autoDelete(rows) {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const toDelete = rows.filter(r => {
+    const dl = new Date(r.deadline + 'T00:00:00');
+    return Math.floor((today - dl) / 86400000) > 0;
+  });
+  for (const r of toDelete) {
+    try { await dbDeleteTask(r.id); } catch(e) {}
   }
-  if (changed) save();
+  return rows.filter(r => {
+    const dl = new Date(r.deadline + 'T00:00:00');
+    return Math.floor((today - dl) / 86400000) <= 0;
+  });
 }
 
 // ═══════════════════════════════════════════
@@ -1130,7 +1166,7 @@ function renderHome() {
 
   let total = 0, urgent = 0;
   for (const cid in tasks) {
-    tasks[cid].forEach(t => {
+    (tasks[cid] || []).forEach(t => {
       total++;
       if (daysLeft(t.deadline) <= 1) urgent++;
     });
@@ -1291,7 +1327,6 @@ async function uploadPdf(type) {
   const file    = input.files[0];
   if (!file) return;
 
-  // Nombre único: curso/tarea/tipo/timestamp-nombre.pdf
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `${activeCourseId}/${activeTaskId}/${type}/${Date.now()}-${safeName}`;
 
@@ -1311,21 +1346,20 @@ async function uploadPdf(type) {
       body: file,
     });
 
-    progbar.style.width = '100%';
+    progbar.style.width = '70%';
+    if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || `Error ${res.status}`); }
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Error ${res.status}`);
-    }
-
-    // Guardar la ruta en el task
+    // Update task pdfs in DB
     const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
     if (!task.pdfs[type]) task.pdfs[type] = [];
     task.pdfs[type].push(path);
-    save();
-    renderPdfBlock(type, task);
 
-    // Reset UI
+    await dbUpdateTask(activeTaskId, { pdfs: task.pdfs });
+    progbar.style.width = '100%';
+
+    renderPdfBlock(type, task);
+    renderCourse(activeCourseId);
+
     input.value = '';
     document.getElementById('fname-'+type).textContent = 'Ningún archivo elegido';
     btn.textContent = '⬆ Subir';
@@ -1346,17 +1380,17 @@ async function deletePdf(e, type, idx) {
   const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
   const path = task.pdfs[type][idx];
 
-  // Borrar de Supabase
   try {
     await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
       method: 'DELETE',
       headers: { 'Authorization': `Bearer ${SUPABASE_ANON}` },
     });
-  } catch(e) { /* si falla igual lo borramos localmente */ }
+  } catch(e) {}
 
   task.pdfs[type].splice(idx, 1);
-  save();
+  await dbUpdateTask(activeTaskId, { pdfs: task.pdfs }).catch(()=>{});
   renderPdfBlock(type, task);
+  renderCourse(activeCourseId);
 }
 
 // ═══════════════════════════════════════════
@@ -1377,26 +1411,48 @@ function closeAddModalDirect() {
   document.getElementById('add-modal').classList.remove('open');
 }
 
-function saveTask() {
+async function saveTask() {
   const name = document.getElementById('f-name').value.trim();
   const date = document.getElementById('f-date').value;
   if (!name || !date) { alert('Completá nombre y fecha.'); return; }
-  const id = Date.now();
-  if (!tasks[activeCourseId]) tasks[activeCourseId] = [];
-  tasks[activeCourseId].push({ id, name, deadline: date, pdfs: { teoria:[], tarea:[], adjuntos:[] } });
-  save();
-  closeAddModalDirect();
-  renderCourse(activeCourseId);
-  renderHome();
+
+  const btn = document.querySelector('#add-modal .modal-save-btn');
+  btn.textContent = 'Guardando...';
+  btn.disabled = true;
+
+  try {
+    const newTask = {
+      id: Date.now(),
+      course_id: activeCourseId,
+      name,
+      deadline: date,
+      pdfs: { teoria:[], tarea:[], adjuntos:[] },
+    };
+    await dbInsertTask(newTask);
+    if (!tasks[activeCourseId]) tasks[activeCourseId] = [];
+    tasks[activeCourseId].push({ id: newTask.id, name, deadline: date, pdfs: newTask.pdfs });
+    closeAddModalDirect();
+    renderCourse(activeCourseId);
+    renderHome();
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.textContent = 'Guardar';
+    btn.disabled = false;
+  }
 }
 
-function deleteTask(e, cid, tid) {
+async function deleteTask(e, cid, tid) {
   e.stopPropagation();
   if (!confirm('¿Eliminar esta tarea?')) return;
-  tasks[cid] = tasks[cid].filter(t => t.id !== tid);
-  save();
-  renderCourse(cid);
-  renderHome();
+  try {
+    await dbDeleteTask(tid);
+    tasks[cid] = tasks[cid].filter(t => t.id !== tid);
+    renderCourse(cid);
+    renderHome();
+  } catch(e) {
+    alert('Error al eliminar: ' + e.message);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -1439,8 +1495,30 @@ function disableAdmin() {
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
-autoDelete();
-renderHome();
+async function init() {
+  // Mostrar loading
+  document.getElementById('courses-list').innerHTML = `
+    <div class="empty-state" style="padding:2rem 0">
+      <div class="emoji">⏳</div>
+      <p>Cargando tareas...</p>
+    </div>`;
+  renderHome();
+
+  try {
+    let rows = await dbGetTasks();
+    rows = await autoDelete(rows);
+    tasks = buildTasksMap(rows);
+    renderHome();
+  } catch(e) {
+    document.getElementById('courses-list').innerHTML = `
+      <div class="empty-state" style="padding:2rem 0">
+        <div class="emoji">❌</div>
+        <p>Error al conectar con la base de datos.<br><small>${e.message}</small></p>
+      </div>`;
+  }
+}
+
+init();
 </script>
 </body>
 </html>
