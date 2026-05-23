@@ -29,6 +29,8 @@
   --teal: #0c8599;
   --expo: #7048e8;
   --expo-light: #f3f0ff;
+  --examen: #e03131;
+  --examen-light: #fff0f0;
   --r: 12px;
   --shadow: 0 2px 12px rgba(0,0,0,0.08);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
@@ -195,6 +197,8 @@ body.admin-mode .topbar-action { display: block; }
 .stat-pill.urgent strong { color: var(--red); }
 .stat-pill.expo { background: var(--expo-light); border-color: #d9d0ff; color: var(--expo); }
 .stat-pill.expo strong { color: var(--expo); }
+.stat-pill.examen { background: var(--examen-light); border-color: #ffc9c9; color: var(--examen); }
+.stat-pill.examen strong { color: var(--examen); }
 
 /* ── BANNER ── */
 .home-banner {
@@ -202,7 +206,6 @@ body.admin-mode .topbar-action { display: block; }
   border-radius: 14px;
   overflow: hidden;
   position: relative;
-  height: 140px;
   border: 2px solid var(--line);
   box-shadow: var(--shadow);
   flex-shrink: 0;
@@ -216,29 +219,77 @@ body.admin-mode .topbar-action { display: block; }
 .home-banner-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(26,26,46,0.55) 0%, rgba(26,26,46,0.1) 100%);
+  background: linear-gradient(135deg, rgba(26,26,46,0.6) 0%, rgba(26,26,46,0.15) 100%);
   display: flex;
-  align-items: flex-end;
+  flex-direction: column;
+  justify-content: flex-end;
   padding: 0.9rem 1.1rem;
+  gap: 0.35rem;
 }
 .home-banner-text {
   font-family: 'Caveat', cursive;
-  font-size: 1.25rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: white;
   text-shadow: 0 1px 6px rgba(0,0,0,0.4);
   line-height: 1.3;
 }
-.home-banner.no-tasks img {
-  object-fit: contain;
-  background: var(--paper2);
+.home-banner-text.sub {
+  font-size: 0.82rem;
+  font-weight: 400;
+  opacity: 0.9;
+  font-family: 'Nunito', sans-serif;
 }
+/* today multi */
+.banner-today-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-height: 140px;
+  overflow-y: auto;
+}
+.banner-today-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255,255,255,0.12);
+  border-radius: 8px;
+  padding: 0.3rem 0.6rem;
+  backdrop-filter: blur(2px);
+}
+.banner-today-item-name {
+  font-family: 'Caveat', cursive;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: white;
+  flex: 1;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+}
+.banner-today-item-course {
+  font-size: 0.65rem;
+  color: rgba(255,255,255,0.75);
+  white-space: nowrap;
+}
+.banner-img-wrapper {
+  position: relative;
+  height: 100px;
+}
+.banner-img-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-banner.no-tasks { min-height: 120px; }
 .home-banner.no-tasks .home-banner-overlay {
   background: none;
+  position: relative;
+  inset: auto;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   gap: 0.4rem;
+  padding: 2rem 1rem;
 }
 .home-banner.no-tasks .home-banner-text {
   color: var(--green);
@@ -550,21 +601,56 @@ body.admin-mode .topbar-action { display: block; }
   border-radius: 100px;
   font-weight: 700;
 }
+.cat-tag-examen {
+  font-size: 0.6rem;
+  color: var(--examen);
+  background: var(--examen-light);
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  font-weight: 700;
+}
+
+/* Admin actions on task card */
+.task-card-actions {
+  display: none;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  align-items: flex-end;
+}
+body.admin-mode .task-card-actions { display: flex; }
+
+.task-edit-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0.3rem;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.task-edit-btn:hover { color: var(--accent); background: var(--accent-light); }
 
 .task-delete-btn {
   background: none;
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 0.85rem;
   padding: 0.3rem;
   border-radius: 8px;
   transition: all 0.2s;
-  display: none;
-  flex-shrink: 0;
 }
 .task-delete-btn:hover { color: var(--red); background: var(--red-light); }
-body.admin-mode .task-delete-btn { display: flex; }
+
+/* non-admin chevron */
+.task-chevron {
+  color: var(--muted);
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+body.admin-mode .task-chevron { display: none; }
 
 .empty-state {
   text-align: center;
@@ -980,27 +1066,31 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 }
 .btn-confirm:hover { background: #2f4dcc; }
 
-/* Category radio buttons */
+/* Category radio buttons — 3 options */
 .cat-radio-group {
   display: flex;
-  gap: 0.7rem;
+  gap: 0.5rem;
 }
 .cat-radio-label {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  padding: 0.6rem 0.8rem;
+  gap: 0.3rem;
+  padding: 0.55rem 0.5rem;
   border: 2px solid var(--line);
   border-radius: 10px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
   transition: all 0.2s;
   color: var(--ink2);
   background: var(--paper2);
+  text-align: center;
+  flex-direction: column;
+  line-height: 1.2;
 }
+.cat-radio-label span.cat-emoji { font-size: 1.1rem; }
 .cat-radio-label input { display: none; }
 .cat-radio-label.selected-tarea {
   border-color: var(--teal);
@@ -1011,6 +1101,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   border-color: var(--expo);
   background: var(--expo-light);
   color: var(--expo);
+}
+.cat-radio-label.selected-examen {
+  border-color: var(--examen);
+  background: var(--examen-light);
+  color: var(--examen);
 }
 
 /* Password modal */
@@ -1127,7 +1222,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
         <div class="upload-row" id="upload-row-teoria">
           <label class="upload-file-label">
             📎 Elegir PDF o PPTX
-            <input type="file" accept="application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,.pdf" id="input-teoria" onchange="onFileChosen('teoria')">
+            <input type="file" accept="application/pdf,.pptx" id="input-teoria" onchange="onFileChosen('teoria')">
           </label>
           <div class="upload-file-name" id="fname-teoria">Ningún archivo elegido</div>
           <div class="upload-progress" id="prog-teoria"><div class="upload-progress-bar" id="progbar-teoria"></div></div>
@@ -1147,7 +1242,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
         <div class="upload-row" id="upload-row-tarea">
           <label class="upload-file-label">
             📎 Elegir PDF o PPTX
-            <input type="file" accept="application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,.pdf" id="input-tarea" onchange="onFileChosen('tarea')">
+            <input type="file" accept="application/pdf,.pptx" id="input-tarea" onchange="onFileChosen('tarea')">
           </label>
           <div class="upload-file-name" id="fname-tarea">Ningún archivo elegido</div>
           <div class="upload-progress" id="prog-tarea"><div class="upload-progress-bar" id="progbar-tarea"></div></div>
@@ -1167,7 +1262,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
         <div class="upload-row" id="upload-row-adjuntos">
           <label class="upload-file-label">
             📎 Elegir PDF o PPTX
-            <input type="file" accept="application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation,.pptx,.pdf" id="input-adjuntos" onchange="onFileChosen('adjuntos')">
+            <input type="file" accept="application/pdf,.pptx" id="input-adjuntos" onchange="onFileChosen('adjuntos')">
           </label>
           <div class="upload-file-name" id="fname-adjuntos">Ningún archivo elegido</div>
           <div class="upload-progress" id="prog-adjuntos"><div class="upload-progress-bar" id="progbar-adjuntos"></div></div>
@@ -1179,11 +1274,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   </div>
 </div>
 
-<!-- ADD TASK MODAL -->
+<!-- ADD / EDIT TASK MODAL -->
 <div class="modal-overlay" id="add-modal" onclick="closeAddModal(event)">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <div class="modal-title">✏️ nueva tarea</div>
+    <div class="modal-title" id="modal-title-text">✏️ nueva tarea</div>
     <div class="form-group">
       <label class="form-label">Nombre</label>
       <input class="form-control" id="f-name" type="text" placeholder="ej: Trabajo Práctico N°2">
@@ -1196,10 +1291,16 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
       <label class="form-label">Categoría</label>
       <div class="cat-radio-group" id="cat-radio-group">
         <label class="cat-radio-label selected-tarea" id="lbl-tarea" onclick="selectCat('tarea')">
-          <input type="radio" name="categoria" value="tarea" checked> 📋 Tarea
+          <input type="radio" name="categoria" value="tarea" checked>
+          <span class="cat-emoji">📋</span> Tarea
         </label>
         <label class="cat-radio-label" id="lbl-exposicion" onclick="selectCat('exposicion')">
-          <input type="radio" name="categoria" value="exposicion"> 🎤 Exposición
+          <input type="radio" name="categoria" value="exposicion">
+          <span class="cat-emoji">🎤</span> Exposición
+        </label>
+        <label class="cat-radio-label" id="lbl-examen" onclick="selectCat('examen')">
+          <input type="radio" name="categoria" value="examen">
+          <span class="cat-emoji">📝</span> Examen
         </label>
       </div>
     </div>
@@ -1241,7 +1342,6 @@ const SB_HEADERS = {
   'Prefer': 'return=representation',
 };
 
-// URLs para el banner
 const BANNER_IMG_URL = 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80';
 const BANNER_GIF_URL = 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif';
 
@@ -1313,6 +1413,8 @@ let tasks          = {};
 let isAdmin        = false;
 let activeCourseId = null;
 let activeTaskId   = null;
+// edit mode
+let editingTaskId  = null; // null = new, else = editing
 
 function buildTasksMap(rows) {
   const map = {};
@@ -1390,6 +1492,18 @@ function getFileType(path) {
   return 'PDF';
 }
 
+function catIcon(cat) {
+  if (cat === 'exposicion') return '🎤';
+  if (cat === 'examen')     return '📝';
+  return '📋';
+}
+
+function catTagHTML(cat) {
+  if (cat === 'exposicion') return '<span class="cat-tag-exposicion">🎤 Exposición</span>';
+  if (cat === 'examen')     return '<span class="cat-tag-examen">📝 Examen</span>';
+  return '<span class="cat-tag-tarea">📋 Tarea</span>';
+}
+
 // ═══════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════
@@ -1414,23 +1528,27 @@ function renderHome() {
   document.getElementById('home-date').textContent =
     new Date().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-  let total = 0, urgent = 0, exposiciones = 0;
+  let total = 0, urgent = 0, exposiciones = 0, examenes = 0;
   const allTasks = [];
   for (const cid in tasks) {
     (tasks[cid] || []).forEach(t => {
       total++;
-      if (daysLeft(t.deadline) <= 1) urgent++;
-      if ((t.categoria || 'tarea') === 'exposicion') exposiciones++;
+      const d = daysLeft(t.deadline);
+      if (d <= 1) urgent++;
+      const cat = t.categoria || 'tarea';
+      if (cat === 'exposicion') exposiciones++;
+      if (cat === 'examen')     examenes++;
       const c = COURSES.find(x => x.id === cid);
       allTasks.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, courseId: cid, color: c ? c.color : '#888' });
     });
   }
 
-  const tareasCount = total - exposiciones;
+  const tareasCount = total - exposiciones - examenes;
   document.getElementById('home-stats').innerHTML = `
     <div class="stat-pill">📚 <strong>${COURSES.length}</strong> cursos</div>
     ${tareasCount > 0 ? `<div class="stat-pill">📋 <strong>${tareasCount}</strong> tarea${tareasCount!==1?'s':''}</div>` : ''}
     ${exposiciones > 0 ? `<div class="stat-pill expo">🎤 <strong>${exposiciones}</strong> exposición${exposiciones!==1?'es':''}</div>` : ''}
+    ${examenes > 0 ? `<div class="stat-pill examen">📝 <strong>${examenes}</strong> examen${examenes!==1?'es':''}</div>` : ''}
     ${total === 0 ? `<div class="stat-pill">📋 <strong>0</strong> tareas</div>` : ''}
     ${urgent > 0 ? `<div class="stat-pill urgent">⚠ <strong>${urgent}</strong> urgente${urgent!==1?'s':''}</div>` : ''}
   `;
@@ -1440,22 +1558,45 @@ function renderHome() {
   if (allTasks.length === 0) {
     bannerContainer.innerHTML = `
       <div class="home-banner no-tasks" style="margin:1.2rem 1.2rem 0">
-        <img src="${BANNER_GIF_URL}" alt="Sin tareas pendientes">
         <div class="home-banner-overlay">
           <div class="home-banner-text">🎉 ¡Todo al día!<br>No tenés tareas pendientes</div>
         </div>
       </div>`;
   } else {
-    const nextTask = allTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline))[0];
-    const d = daysLeft(nextTask.deadline);
-    const urgMsg = d === 0 ? '¡Entrega hoy!' : d === 1 ? '¡Entrega mañana!' : `${total} tarea${total!==1?'s':''} pendiente${total!==1?'s':''}`;
-    bannerContainer.innerHTML = `
-      <div class="home-banner" style="margin:1.2rem 1.2rem 0">
-        <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
-        <div class="home-banner-overlay">
-          <div class="home-banner-text">📚 ${urgMsg}<br><span style="font-size:0.9rem;opacity:0.85">${nextTask.name} · ${nextTask.courseIcon} ${nextTask.courseName}</span></div>
-        </div>
-      </div>`;
+    const sorted = allTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+    const todayTasks = sorted.filter(t => daysLeft(t.deadline) === 0);
+    const nextTask   = sorted[0];
+    const d          = daysLeft(nextTask.deadline);
+
+    if (todayTasks.length > 0) {
+      // Show ALL tasks due today
+      const itemsHTML = todayTasks.map(t =>
+        `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
+          <span style="font-size:1rem">${catIcon(t.categoria)}</span>
+          <span class="banner-today-item-name">${t.name}</span>
+          <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+        </div>`
+      ).join('');
+      bannerContainer.innerHTML = `
+        <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: linear-gradient(135deg,#c92a2a,#e03131);">
+          <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;">
+            <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.5rem">
+              🚨 ¡Entrega${todayTasks.length>1?'s':''} hoy! (${todayTasks.length})
+            </div>
+            <div class="banner-today-list">${itemsHTML}</div>
+          </div>
+        </div>`;
+    } else {
+      const urgMsg = d === 1 ? '¡Entrega mañana!' : `${total} tarea${total!==1?'s':''} pendiente${total!==1?'s':''}`;
+      bannerContainer.innerHTML = `
+        <div class="home-banner" style="margin:1.2rem 1.2rem 0;height:140px">
+          <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
+          <div class="home-banner-overlay">
+            <div class="home-banner-text">📚 ${urgMsg}</div>
+            <div class="home-banner-text sub">${catIcon(nextTask.categoria)} ${nextTask.name} · ${nextTask.courseIcon} ${nextTask.courseName}</div>
+          </div>
+        </div>`;
+    }
   }
 
   // ── Ticker ──
@@ -1468,9 +1609,8 @@ function renderHome() {
       const d = daysLeft(t.deadline);
       const label = d === 0 ? '¡hoy!' : d === 1 ? '1 día' : `${d} días`;
       const dayCls = d === 0 ? 'today' : d <= 1 ? 'danger' : '';
-      const cat = (t.categoria || 'tarea') === 'exposicion' ? '🎤' : '📋';
       return `<div class="ticker-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
-        <div class="ticker-task-name">${cat} ${t.name}</div>
+        <div class="ticker-task-name">${catIcon(t.categoria)} ${t.name}</div>
         <div class="ticker-task-course">(${t.courseName})</div>
         <span class="ticker-task-days ${dayCls}">${label}</span>
       </div>`;
@@ -1522,6 +1662,7 @@ function renderCourse(cid) {
   const all = (tasks[cid] || []).slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
   const tareas = all.filter(t => (t.categoria||'tarea') === 'tarea');
   const expos  = all.filter(t => (t.categoria||'tarea') === 'exposicion');
+  const exams  = all.filter(t => (t.categoria||'tarea') === 'examen');
 
   document.getElementById('course-topbar-title').textContent = c.name;
   document.getElementById('course-hero-name').textContent = c.icon + ' ' + c.name;
@@ -1529,6 +1670,7 @@ function renderCourse(cid) {
   const parts = [];
   if (tareas.length) parts.push(`${tareas.length} tarea${tareas.length!==1?'s':''}`);
   if (expos.length)  parts.push(`${expos.length} exposición${expos.length!==1?'es':''}`);
+  if (exams.length)  parts.push(`${exams.length} examen${exams.length!==1?'es':''}`);
   document.getElementById('course-hero-sub').textContent = parts.length ? parts.join(' · ') + ' pendiente' + (all.length!==1?'s':'') : 'Sin tareas pendientes';
 
   const list = document.getElementById('tasks-list');
@@ -1538,7 +1680,6 @@ function renderCourse(cid) {
   }
 
   let html = '';
-
   if (tareas.length) {
     html += `<div class="section-title">📋 tareas</div>`;
     html += tareas.map(t => taskCardHTML(t, cid, c)).join('');
@@ -1546,6 +1687,10 @@ function renderCourse(cid) {
   if (expos.length) {
     html += `<div class="section-title" style="margin-top:${tareas.length?'1rem':'0'}">🎤 exposiciones</div>`;
     html += expos.map(t => taskCardHTML(t, cid, c)).join('');
+  }
+  if (exams.length) {
+    html += `<div class="section-title" style="margin-top:${(tareas.length||expos.length)?'1rem':'0'}">📝 exámenes</div>`;
+    html += exams.map(t => taskCardHTML(t, cid, c)).join('');
   }
 
   list.innerHTML = html;
@@ -1556,9 +1701,6 @@ function taskCardHTML(t, cid, c) {
   const cls    = d <= 1 ? 'urgent' : d <= 3 ? 'warn' : '';
   const stripe = d <= 1 ? '#ff6b6b' : d <= 3 ? '#ffb347' : c.color;
   const pdftag = hasPdfs(t) ? '<span class="has-pdf-tag">📎 Archivos</span>' : '';
-  const catTag = (t.categoria||'tarea') === 'exposicion'
-    ? '<span class="cat-tag-exposicion">🎤 Exposición</span>'
-    : '<span class="cat-tag-tarea">📋 Tarea</span>';
   return `<div class="task-card ${cls}" onclick="openTask('${cid}',${t.id})">
     <div class="task-card-stripe" style="background:${stripe}"></div>
     <div class="task-card-body">
@@ -1566,12 +1708,15 @@ function taskCardHTML(t, cid, c) {
       <div class="task-card-meta">
         <span class="task-date-tag">📅 ${fmtDate(t.deadline)}</span>
         ${daysChip(d)}
-        ${catTag}
+        ${catTagHTML(t.categoria)}
         ${pdftag}
       </div>
     </div>
-    <button class="task-delete-btn" onclick="deleteTask(event,'${cid}',${t.id})">🗑</button>
-    <span style="color:var(--muted);font-size:1rem">›</span>
+    <div class="task-card-actions">
+      <button class="task-edit-btn" onclick="editTask(event,'${cid}',${t.id})">✏️</button>
+      <button class="task-delete-btn" onclick="deleteTask(event,'${cid}',${t.id})">🗑</button>
+    </div>
+    <span class="task-chevron">›</span>
   </div>`;
 }
 
@@ -1585,16 +1730,13 @@ function openTask(cid, tid) {
   if (!task) return;
   const c = COURSES.find(x => x.id === cid);
   const d = daysLeft(task.deadline);
-  const catTag = (task.categoria||'tarea') === 'exposicion'
-    ? '<span class="cat-tag-exposicion">🎤 Exposición</span>'
-    : '<span class="cat-tag-tarea">📋 Tarea</span>';
 
   document.getElementById('task-topbar-title').textContent = task.name;
   document.getElementById('task-hero-name').textContent    = task.name;
   document.getElementById('task-hero-meta').innerHTML = `
     <span class="task-date-tag" style="font-size:0.75rem">📅 ${fmtDate(task.deadline)}</span>
     ${daysChip(d)}
-    ${catTag}
+    ${catTagHTML(task.categoria)}
     <span style="font-size:0.72rem;color:var(--muted)">${c.icon} ${c.name}</span>
   `;
 
@@ -1680,7 +1822,7 @@ function renderFileBlock(type, task) {
 }
 
 // ═══════════════════════════════════════════
-// FILE UPLOAD — SUPABASE (PDF + PPTX)
+// FILE UPLOAD
 // ═══════════════════════════════════════════
 function onFileChosen(type) {
   const input = document.getElementById('input-'+type);
@@ -1777,22 +1919,42 @@ async function deleteFile(e, type, idx) {
 }
 
 // ═══════════════════════════════════════════
-// TASKS CRUD
+// TASKS CRUD + EDIT
 // ═══════════════════════════════════════════
 let selectedCat = 'tarea';
 
 function selectCat(cat) {
   selectedCat = cat;
-  document.getElementById('lbl-tarea').className = 'cat-radio-label' + (cat === 'tarea' ? ' selected-tarea' : '');
-  document.getElementById('lbl-exposicion').className = 'cat-radio-label' + (cat === 'exposicion' ? ' selected-exposicion' : '');
+  document.getElementById('lbl-tarea').className     = 'cat-radio-label' + (cat === 'tarea'      ? ' selected-tarea'      : '');
+  document.getElementById('lbl-exposicion').className= 'cat-radio-label' + (cat === 'exposicion' ? ' selected-exposicion' : '');
+  document.getElementById('lbl-examen').className    = 'cat-radio-label' + (cat === 'examen'     ? ' selected-examen'     : '');
 }
 
 function openAddModal() {
+  editingTaskId = null;
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('f-name').value = '';
   document.getElementById('f-date').value = today;
   selectedCat = 'tarea';
   selectCat('tarea');
+  document.getElementById('modal-title-text').textContent = '✏️ nueva tarea';
+  document.getElementById('modal-save-btn').textContent = 'Guardar';
+  document.getElementById('add-modal').classList.add('open');
+  setTimeout(() => document.getElementById('f-name').focus(), 100);
+}
+
+function editTask(e, cid, tid) {
+  e.stopPropagation();
+  editingTaskId = tid;
+  const task = tasks[cid].find(t => t.id === tid);
+  if (!task) return;
+
+  document.getElementById('f-name').value = task.name;
+  document.getElementById('f-date').value = task.deadline;
+  selectedCat = task.categoria || 'tarea';
+  selectCat(selectedCat);
+  document.getElementById('modal-title-text').textContent = '✏️ editar tarea';
+  document.getElementById('modal-save-btn').textContent = 'Actualizar';
   document.getElementById('add-modal').classList.add('open');
   setTimeout(() => document.getElementById('f-name').focus(), 100);
 }
@@ -1802,6 +1964,7 @@ function closeAddModal(e) {
 }
 function closeAddModalDirect() {
   document.getElementById('add-modal').classList.remove('open');
+  editingTaskId = null;
 }
 
 async function saveTask() {
@@ -1814,25 +1977,38 @@ async function saveTask() {
   btn.disabled = true;
 
   try {
-    const newTask = {
-      id: Date.now(),
-      course_id: activeCourseId,
-      name,
-      deadline: date,
-      description: '',
-      pdfs: { teoria:[], tarea:[], adjuntos:[] },
-      categoria: selectedCat,
-    };
-    await dbInsertTask(newTask);
-    if (!tasks[activeCourseId]) tasks[activeCourseId] = [];
-    tasks[activeCourseId].push({ id: newTask.id, name, deadline: date, description: '', pdfs: newTask.pdfs, categoria: selectedCat });
-    closeAddModalDirect();
-    renderCourse(activeCourseId);
-    renderHome();
+    if (editingTaskId !== null) {
+      // ── UPDATE ──
+      await dbUpdateTask(editingTaskId, { name, deadline: date, categoria: selectedCat });
+      const task = tasks[activeCourseId].find(t => t.id === editingTaskId);
+      task.name      = name;
+      task.deadline  = date;
+      task.categoria = selectedCat;
+      closeAddModalDirect();
+      renderCourse(activeCourseId);
+      renderHome();
+    } else {
+      // ── INSERT ──
+      const newTask = {
+        id: Date.now(),
+        course_id: activeCourseId,
+        name,
+        deadline: date,
+        description: '',
+        pdfs: { teoria:[], tarea:[], adjuntos:[] },
+        categoria: selectedCat,
+      };
+      await dbInsertTask(newTask);
+      if (!tasks[activeCourseId]) tasks[activeCourseId] = [];
+      tasks[activeCourseId].push({ id: newTask.id, name, deadline: date, description: '', pdfs: newTask.pdfs, categoria: selectedCat });
+      closeAddModalDirect();
+      renderCourse(activeCourseId);
+      renderHome();
+    }
   } catch(e) {
     alert('Error: ' + e.message);
   } finally {
-    btn.textContent = 'Guardar';
+    btn.textContent = editingTaskId ? 'Actualizar' : 'Guardar';
     btn.disabled = false;
   }
 }
