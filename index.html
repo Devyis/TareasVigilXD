@@ -545,6 +545,32 @@ body.admin-mode .add-task-btn { display: block; }
 .pdf-item:hover { border-color: var(--accent); background: var(--accent-light); }
 .pdf-item:last-child { margin-bottom: 0; }
 
+.pdf-item-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pdf-btn {
+  background: var(--paper);
+  border: 1.5px solid var(--line);
+  border-radius: 7px;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--ink2);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+  transition: all 0.18s;
+  font-family: 'Nunito', sans-serif;
+}
+.pdf-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.pdf-btn.download:hover { border-color: var(--green); color: var(--green); background: var(--green-light); }
+
 .pdf-item-icon {
   width: 36px;
   height: 36px;
@@ -582,27 +608,38 @@ body.admin-mode .add-task-btn { display: block; }
 .upload-row {
   display: none;
   margin-top: 0.7rem;
+  flex-direction: column;
   gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
 }
 body.admin-mode .upload-row { display: flex; }
 
-.upload-input-text {
-  flex: 1;
-  min-width: 120px;
-  background: var(--paper2);
-  border: 1.5px solid var(--line);
-  border-radius: 8px;
-  padding: 0.5rem 0.7rem;
-  font-family: 'Nunito', sans-serif;
+.upload-file-label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--accent-light);
+  border: 2px dashed var(--accent);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
   font-size: 0.75rem;
-  color: var(--ink);
-  outline: none;
-  transition: border-color 0.2s;
+  color: var(--accent);
+  font-weight: 700;
 }
-.upload-input-text:focus { border-color: var(--accent); }
-.upload-input-text::placeholder { color: var(--muted); }
+.upload-file-label:hover { background: var(--accent); color: white; }
+.upload-file-label input[type="file"] { display: none; }
+
+.upload-file-name {
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-style: italic;
+  padding: 0 0.3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
 
 .upload-save-btn {
   background: var(--accent);
@@ -612,12 +649,33 @@ body.admin-mode .upload-row { display: flex; }
   font-family: 'Nunito', sans-serif;
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.5rem 0.9rem;
+  padding: 0.55rem 0.9rem;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
 }
 .upload-save-btn:hover { background: #2f4dcc; }
+.upload-save-btn:disabled { background: var(--muted); cursor: not-allowed; }
+
+.upload-progress {
+  height: 4px;
+  background: var(--line);
+  border-radius: 4px;
+  overflow: hidden;
+  display: none;
+}
+.upload-progress-bar {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  transition: width 0.3s;
+  width: 0%;
+}
+.upload-progress.show { display: block; }
 
 .delete-pdf-btn {
   background: none;
@@ -844,9 +902,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
       </div>
       <div class="block-body">
         <div id="block-teoria-list"></div>
-        <div class="upload-row">
-          <input class="upload-input-text" id="input-teoria" type="text" placeholder="nombre-archivo.pdf">
-          <button class="upload-save-btn" onclick="addPdf('teoria')">Agregar</button>
+        <div class="upload-row" id="upload-row-teoria">
+          <label class="upload-file-label">
+            📎 Elegir PDF
+            <input type="file" accept="application/pdf" id="input-teoria" onchange="onFileChosen('teoria')">
+          </label>
+          <div class="upload-file-name" id="fname-teoria">Ningún archivo elegido</div>
+          <div class="upload-progress" id="prog-teoria"><div class="upload-progress-bar" id="progbar-teoria"></div></div>
+          <button class="upload-save-btn" id="btn-teoria" onclick="uploadPdf('teoria')" disabled>⬆ Subir</button>
         </div>
       </div>
     </div>
@@ -859,9 +922,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
       </div>
       <div class="block-body">
         <div id="block-tarea-list"></div>
-        <div class="upload-row">
-          <input class="upload-input-text" id="input-tarea" type="text" placeholder="nombre-archivo.pdf">
-          <button class="upload-save-btn" onclick="addPdf('tarea')">Agregar</button>
+        <div class="upload-row" id="upload-row-tarea">
+          <label class="upload-file-label">
+            📎 Elegir PDF
+            <input type="file" accept="application/pdf" id="input-tarea" onchange="onFileChosen('tarea')">
+          </label>
+          <div class="upload-file-name" id="fname-tarea">Ningún archivo elegido</div>
+          <div class="upload-progress" id="prog-tarea"><div class="upload-progress-bar" id="progbar-tarea"></div></div>
+          <button class="upload-save-btn" id="btn-tarea" onclick="uploadPdf('tarea')" disabled>⬆ Subir</button>
         </div>
       </div>
     </div>
@@ -874,9 +942,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
       </div>
       <div class="block-body">
         <div id="block-adjuntos-list"></div>
-        <div class="upload-row">
-          <input class="upload-input-text" id="input-adjuntos" type="text" placeholder="nombre-archivo.pdf">
-          <button class="upload-save-btn" onclick="addPdf('adjuntos')">Agregar</button>
+        <div class="upload-row" id="upload-row-adjuntos">
+          <label class="upload-file-label">
+            📎 Elegir PDF
+            <input type="file" accept="application/pdf" id="input-adjuntos" onchange="onFileChosen('adjuntos')">
+          </label>
+          <div class="upload-file-name" id="fname-adjuntos">Ningún archivo elegido</div>
+          <div class="upload-progress" id="prog-adjuntos"><div class="upload-progress-bar" id="progbar-adjuntos"></div></div>
+          <button class="upload-save-btn" id="btn-adjuntos" onclick="uploadPdf('adjuntos')" disabled>⬆ Subir</button>
         </div>
       </div>
     </div>
@@ -923,17 +996,28 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 // CONFIG — cambiá la contraseña acá
 // ═══════════════════════════════════════════
 const ADMIN_PASSWORD = 'admin123';
-const PDF_BASE = './pdfs/';
+
+// ═══════════════════════════════════════════
+// SUPABASE CONFIG
+// ═══════════════════════════════════════════
+const SUPABASE_URL    = 'https://ebtehnbffwobpdnmftod.supabase.co';
+const SUPABASE_ANON   = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidGVobmJmZndvYnBkbm1mdG9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0ODM1NzQsImV4cCI6MjA5NTA1OTU3NH0.hzkHQ88Q_GJjH9BZJXkXOj2M3NLP8Sms-QId0jt2N3Y';
+const BUCKET          = 'pdfs';
+
+// Genera la URL pública de un archivo en Supabase Storage
+function publicUrl(path) {
+  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
+}
 
 // ═══════════════════════════════════════════
 // CURSOS — cambiá los nombres si querés
 // ═══════════════════════════════════════════
 const COURSES = [
-  { id: 'logica',      name: 'Lógica de Programación',         icon: '🧠', color: '#3b5bdb', bg: '#e8edff' },
-  { id: 'java',        name: 'Java',                            icon: '☕', color: '#e67700', bg: '#fff3e0' },
-  { id: 'ads',         name: 'ADS',                             icon: '📐', color: '#7048e8', bg: '#f3f0ff' },
-  { id: 'bdatos',      name: 'Diseño de Base de Datos',         icon: '🗄️', color: '#0c8599', bg: '#e3fafc' },
-  { id: 'innova',      name: 'Fundamentos de Innovación Tec.',  icon: '💡', color: '#2f9e44', bg: '#ebfbee' },
+  { id: 'logica',  name: 'Lógica de Programación',        icon: '🧠', color: '#3b5bdb', bg: '#e8edff' },
+  { id: 'java',    name: 'Java',                           icon: '☕', color: '#e67700', bg: '#fff3e0' },
+  { id: 'ads',     name: 'ADS',                            icon: '📐', color: '#7048e8', bg: '#f3f0ff' },
+  { id: 'bdatos',  name: 'Diseño de Base de Datos',        icon: '🗄️', color: '#0c8599', bg: '#e3fafc' },
+  { id: 'innova',  name: 'Fundamentos de Innovación Tec.', icon: '💡', color: '#2f9e44', bg: '#ebfbee' },
 ];
 
 // ═══════════════════════════════════════════
@@ -944,19 +1028,19 @@ function makeDemoData() {
   const t = new Date();
   return {
     logica: [
-      { id: 1, name: 'TP N°2 — Estructuras de control', deadline: add(t,3), pdfs: { teoria: ['teoria-estructuras.pdf'], tarea: ['tp2-enunciado.pdf'], adjuntos: [] } },
-      { id: 2, name: 'Parcial domiciliario', deadline: add(t,6), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
+      { id: 1, name: 'TP N°2 — Estructuras de control', deadline: add(t,3), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
+      { id: 2, name: 'Parcial domiciliario',             deadline: add(t,6), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
     ],
-    java: [
-      { id: 3, name: 'Entrega proyecto POO', deadline: add(t,1), pdfs: { teoria: [], tarea: ['poo-consigna.pdf'], adjuntos: [] } },
+    java:   [
+      { id: 3, name: 'Entrega proyecto POO', deadline: add(t,1), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
     ],
-    ads: [
-      { id: 4, name: 'Diagrama de casos de uso', deadline: add(t,0), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
-      { id: 5, name: 'Informe de relevamiento', deadline: add(t,8), pdfs: { teoria: ['guia-relevamiento.pdf'], tarea: [], adjuntos: [] } },
+    ads:    [
+      { id: 4, name: 'Diagrama de casos de uso',  deadline: add(t,0), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
+      { id: 5, name: 'Informe de relevamiento',   deadline: add(t,8), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
     ],
     bdatos: [],
     innova: [
-      { id: 6, name: 'Presentación grupal', deadline: add(t,4), pdfs: { teoria: [], tarea: [], adjuntos: ['rubrica.pdf'] } },
+      { id: 6, name: 'Presentación grupal', deadline: add(t,4), pdfs: { teoria: [], tarea: [], adjuntos: [] } },
     ],
   };
 }
@@ -964,8 +1048,8 @@ function makeDemoData() {
 // ═══════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════
-let tasks   = JSON.parse(localStorage.getItem('tasks_v2') || 'null') || makeDemoData();
-let isAdmin = false;
+let tasks          = JSON.parse(localStorage.getItem('tasks_v2') || 'null') || makeDemoData();
+let isAdmin        = false;
 let activeCourseId = null;
 let activeTaskId   = null;
 
@@ -1024,9 +1108,7 @@ function hasPdfs(task) {
 // NAVIGATION
 // ═══════════════════════════════════════════
 function showScreen(id, dir='forward') {
-  document.querySelectorAll('.screen').forEach(s => {
-    s.classList.remove('active','back');
-  });
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active','back'));
   const s = document.getElementById('screen-'+id);
   s.classList.add('active');
   if (dir === 'back') s.classList.add('back');
@@ -1035,7 +1117,7 @@ function showScreen(id, dir='forward') {
 
 function goBack(to) {
   showScreen(to, 'back');
-  if (to === 'home') renderHome();
+  if (to === 'home')   renderHome();
   if (to === 'course') renderCourse(activeCourseId);
 }
 
@@ -1043,17 +1125,14 @@ function goBack(to) {
 // RENDER HOME
 // ═══════════════════════════════════════════
 function renderHome() {
-  // date
   document.getElementById('home-date').textContent =
     new Date().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
-  // stats
   let total = 0, urgent = 0;
   for (const cid in tasks) {
     tasks[cid].forEach(t => {
       total++;
-      const d = daysLeft(t.deadline);
-      if (d <= 1) urgent++;
+      if (daysLeft(t.deadline) <= 1) urgent++;
     });
   }
   document.getElementById('home-stats').innerHTML = `
@@ -1062,7 +1141,6 @@ function renderHome() {
     ${urgent > 0 ? `<div class="stat-pill urgent">⚠ <strong>${urgent}</strong> urgente${urgent!==1?'s':''}</div>` : ''}
   `;
 
-  // courses
   document.getElementById('courses-list').innerHTML = COURSES.map(c => {
     const ct = tasks[c.id] || [];
     return `<div class="course-card" onclick="openCourse('${c.id}')">
@@ -1092,7 +1170,7 @@ function openCourse(cid) {
 }
 
 function renderCourse(cid) {
-  const c = COURSES.find(x => x.id === cid);
+  const c  = COURSES.find(x => x.id === cid);
   const ct = (tasks[cid] || []).slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
 
   document.getElementById('course-topbar-title').textContent = c.name;
@@ -1107,8 +1185,8 @@ function renderCourse(cid) {
   }
 
   list.innerHTML = ct.map(t => {
-    const d = daysLeft(t.deadline);
-    const cls = d <= 1 ? 'urgent' : d <= 3 ? 'warn' : '';
+    const d      = daysLeft(t.deadline);
+    const cls    = d <= 1 ? 'urgent' : d <= 3 ? 'warn' : '';
     const stripe = d <= 1 ? '#ff6b6b' : d <= 3 ? '#ffb347' : c.color;
     const pdftag = hasPdfs(t) ? '<span class="has-pdf-tag">📎 PDFs</span>' : '';
     return `<div class="task-card ${cls}" onclick="openTask('${cid}',${t.id})">
@@ -1139,7 +1217,7 @@ function openTask(cid, tid) {
   const d = daysLeft(task.deadline);
 
   document.getElementById('task-topbar-title').textContent = task.name;
-  document.getElementById('task-hero-name').textContent = task.name;
+  document.getElementById('task-hero-name').textContent    = task.name;
   document.getElementById('task-hero-meta').innerHTML = `
     <span class="task-date-tag" style="font-size:0.75rem">📅 ${fmtDate(task.deadline)}</span>
     ${daysChip(d)}
@@ -1150,10 +1228,14 @@ function openTask(cid, tid) {
   renderPdfBlock('tarea',    task);
   renderPdfBlock('adjuntos', task);
 
-  // clear inputs
+  // reset file inputs
   ['teoria','tarea','adjuntos'].forEach(k => {
     const el = document.getElementById('input-'+k);
     if (el) el.value = '';
+    const fn = document.getElementById('fname-'+k);
+    if (fn) fn.textContent = 'Ningún archivo elegido';
+    const btn = document.getElementById('btn-'+k);
+    if (btn) btn.disabled = true;
   });
 
   showScreen('task');
@@ -1166,34 +1248,112 @@ function renderPdfBlock(type, task) {
     list.innerHTML = `<div class="block-empty">Sin archivos aún</div>`;
     return;
   }
-  list.innerHTML = pdfs.map((pdf, i) => `
-    <a class="pdf-item" href="${PDF_BASE}${pdf}" target="_blank">
+  list.innerHTML = pdfs.map((pdf, i) => {
+    const url  = publicUrl(pdf);
+    const name = pdf.split('/').pop();
+    return `
+    <div class="pdf-item">
       <div class="pdf-item-icon">📄</div>
       <div class="pdf-item-info">
-        <div class="pdf-item-name">${pdf}</div>
-        <div class="pdf-item-sub">Toca para abrir</div>
+        <div class="pdf-item-name">${name}</div>
+        <div class="pdf-item-sub">PDF</div>
       </div>
-      <button class="delete-pdf-btn" onclick="deletePdf(event,'${type}',${i})">✕</button>
-      <span class="pdf-item-arrow">›</span>
-    </a>
-  `).join('');
+      <div class="pdf-item-actions">
+        <a class="pdf-btn" href="${url}" target="_blank">👁 Ver</a>
+        <a class="pdf-btn download" href="${url}" download="${name}">⬇ Descargar</a>
+        <button class="delete-pdf-btn" onclick="deletePdf(event,'${type}',${i})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
-function addPdf(type) {
+// ═══════════════════════════════════════════
+// FILE UPLOAD — SUPABASE
+// ═══════════════════════════════════════════
+function onFileChosen(type) {
   const input = document.getElementById('input-'+type);
-  const val = input.value.trim();
-  if (!val) return;
-  const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
-  if (!task.pdfs[type]) task.pdfs[type] = [];
-  task.pdfs[type].push(val);
-  save();
-  renderPdfBlock(type, task);
-  input.value = '';
+  const fname = document.getElementById('fname-'+type);
+  const btn   = document.getElementById('btn-'+type);
+  if (input.files && input.files[0]) {
+    fname.textContent = input.files[0].name;
+    btn.disabled = false;
+  } else {
+    fname.textContent = 'Ningún archivo elegido';
+    btn.disabled = true;
+  }
 }
 
-function deletePdf(e, type, idx) {
+async function uploadPdf(type) {
+  const input   = document.getElementById('input-'+type);
+  const btn     = document.getElementById('btn-'+type);
+  const prog    = document.getElementById('prog-'+type);
+  const progbar = document.getElementById('progbar-'+type);
+  const file    = input.files[0];
+  if (!file) return;
+
+  // Nombre único: curso/tarea/tipo/timestamp-nombre.pdf
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const path = `${activeCourseId}/${activeTaskId}/${type}/${Date.now()}-${safeName}`;
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Subiendo...';
+  prog.classList.add('show');
+  progbar.style.width = '30%';
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON}`,
+        'Content-Type': file.type || 'application/pdf',
+        'x-upsert': 'true',
+      },
+      body: file,
+    });
+
+    progbar.style.width = '100%';
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `Error ${res.status}`);
+    }
+
+    // Guardar la ruta en el task
+    const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
+    if (!task.pdfs[type]) task.pdfs[type] = [];
+    task.pdfs[type].push(path);
+    save();
+    renderPdfBlock(type, task);
+
+    // Reset UI
+    input.value = '';
+    document.getElementById('fname-'+type).textContent = 'Ningún archivo elegido';
+    btn.textContent = '⬆ Subir';
+    btn.disabled = true;
+    setTimeout(() => { prog.classList.remove('show'); progbar.style.width = '0%'; }, 800);
+
+  } catch(e) {
+    alert('Error al subir: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = '⬆ Subir';
+    prog.classList.remove('show');
+    progbar.style.width = '0%';
+  }
+}
+
+async function deletePdf(e, type, idx) {
   e.preventDefault(); e.stopPropagation();
   const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
+  const path = task.pdfs[type][idx];
+
+  // Borrar de Supabase
+  try {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Bearer ${SUPABASE_ANON}` },
+    });
+  } catch(e) { /* si falla igual lo borramos localmente */ }
+
   task.pdfs[type].splice(idx, 1);
   save();
   renderPdfBlock(type, task);
