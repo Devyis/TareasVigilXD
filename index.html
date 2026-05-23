@@ -972,7 +972,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeAddModalDirect()">Cancelar</button>
-      <button class="btn-confirm" onclick="saveTask()">Guardar</button>
+      <button class="btn-confirm" id="modal-save-btn" onclick="saveTask()">Guardar</button>
     </div>
   </div>
 </div>
@@ -1416,7 +1416,7 @@ async function saveTask() {
   const date = document.getElementById('f-date').value;
   if (!name || !date) { alert('Completá nombre y fecha.'); return; }
 
-  const btn = document.querySelector('#add-modal .modal-save-btn');
+  const btn = document.getElementById('modal-save-btn');
   btn.textContent = 'Guardando...';
   btn.disabled = true;
 
