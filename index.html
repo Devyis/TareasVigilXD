@@ -43,10 +43,8 @@ body {
   overflow-x: hidden;
 }
 
-/* ── NOTEBOOK LINES BG ── */
 .notebook-bg {
-  background-image:
-    linear-gradient(var(--line-blue) 1px, transparent 1px);
+  background-image: linear-gradient(var(--line-blue) 1px, transparent 1px);
   background-size: 100% 32px;
   background-position: 0 28px;
   position: relative;
@@ -61,7 +59,6 @@ body {
   pointer-events: none;
 }
 
-/* ── SCREENS ── */
 .screen {
   display: none;
   min-height: 100vh;
@@ -79,7 +76,6 @@ body {
 }
 .screen.back { animation: slideBack 0.25s ease; }
 
-/* ── TOPBAR ── */
 .topbar {
   background: var(--paper);
   border-bottom: 2px solid var(--line);
@@ -135,10 +131,7 @@ body {
 }
 body.admin-mode .topbar-action { display: block; }
 
-/* ── SCREEN 1: HOME ── */
-#screen-home {
-  background: var(--bg);
-}
+#screen-home { background: var(--bg); }
 
 .home-header {
   background: var(--paper);
@@ -239,7 +232,6 @@ body.admin-mode .topbar-action { display: block; }
   position: absolute;
   left: 0; top: 0; bottom: 0;
   width: 5px;
-  border-radius: 0;
 }
 
 .course-card-inner {
@@ -297,10 +289,7 @@ body.admin-mode .topbar-action { display: block; }
 
 .chevron { color: var(--muted); font-size: 1rem; }
 
-/* ── SCREEN 2: COURSE ── */
-#screen-course {
-  background: var(--bg);
-}
+#screen-course { background: var(--bg); }
 
 .course-hero {
   padding: 1.4rem 1.2rem 1.2rem;
@@ -321,9 +310,7 @@ body.admin-mode .topbar-action { display: block; }
   color: var(--muted);
 }
 
-.tasks-section {
-  padding: 1.2rem;
-}
+.tasks-section { padding: 1.2rem; }
 
 .section-title {
   font-family: 'Caveat', cursive;
@@ -439,7 +426,6 @@ body.admin-mode .task-delete-btn { display: flex; }
 .empty-state .emoji { font-size: 2.5rem; margin-bottom: 0.7rem; }
 .empty-state p { font-family: 'Caveat', cursive; font-size: 1.1rem; }
 
-/* ADD TASK BUTTON */
 .add-task-btn {
   width: 100%;
   background: var(--accent-light);
@@ -458,10 +444,7 @@ body.admin-mode .task-delete-btn { display: flex; }
 .add-task-btn:hover { background: var(--accent); color: white; }
 body.admin-mode .add-task-btn { display: block; }
 
-/* ── SCREEN 3: TASK ── */
-#screen-task {
-  background: var(--bg);
-}
+#screen-task { background: var(--bg); }
 
 .task-hero {
   background: var(--paper);
@@ -525,9 +508,7 @@ body.admin-mode .add-task-btn { display: block; }
   flex: 1;
 }
 
-.block-body {
-  padding: 1rem;
-}
+.block-body { padding: 1rem; }
 
 .pdf-item {
   display: flex;
@@ -594,8 +575,6 @@ body.admin-mode .add-task-btn { display: block; }
 }
 .pdf-item-sub { font-size: 0.62rem; color: var(--muted); }
 
-.pdf-item-arrow { color: var(--muted); font-size: 0.9rem; }
-
 .block-empty {
   text-align: center;
   padding: 1.2rem;
@@ -604,7 +583,6 @@ body.admin-mode .add-task-btn { display: block; }
   font-style: italic;
 }
 
-/* Admin: upload row inside block */
 .upload-row {
   display: none;
   margin-top: 0.7rem;
@@ -690,7 +668,6 @@ body.admin-mode .upload-row { display: flex; }
 .delete-pdf-btn:hover { color: var(--red); }
 body.admin-mode .delete-pdf-btn { display: inline-flex; }
 
-/* ── TICKER ── */
 .ticker-wrap {
   background: linear-gradient(135deg, #1864ab, #3b5bdb);
   border-radius: 12px;
@@ -745,7 +722,6 @@ body.admin-mode .delete-pdf-btn { display: inline-flex; }
   100% { transform: translateX(-50%); }
 }
 
-/* ── DESCRIPCION TAREA ── */
 .desc-block {
   background: var(--paper2);
   border: 2px solid var(--line);
@@ -804,6 +780,7 @@ body.admin-mode .desc-textarea { display: block; }
 }
 .desc-save-btn:hover { background: #2f4dcc; }
 body.admin-mode .desc-save-btn { display: inline-flex; }
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -906,7 +883,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 }
 .btn-confirm:hover { background: #2f4dcc; }
 
-/* ── PASSWORD MODAL ── */
 .pw-overlay {
   position: fixed;
   inset: 0;
@@ -941,7 +917,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 .pw-error { font-size: 0.7rem; color: var(--red); margin-top: 0.4rem; display: none; }
 .pw-error.show { display: block; }
 
-/* ── NOTEBOOK STICKER DECORATION ── */
 .sticker {
   display: inline-block;
   font-size: 1.1rem;
@@ -956,9 +931,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════
-     SCREEN 1 — HOME
-══════════════════════════════════════════ -->
+<!-- SCREEN 1 — HOME -->
 <div id="screen-home" class="screen active">
   <div class="home-header">
     <div class="home-top">
@@ -970,13 +943,11 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     </div>
     <div class="home-stats" id="home-stats"></div>
   </div>
-  <div id="ticker-wrap-container"></div>
+  <div style="padding: 1.2rem 1.2rem 0" id="ticker-wrap-container"></div>
   <div class="courses-list" id="courses-list"></div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     SCREEN 2 — COURSE
-══════════════════════════════════════════ -->
+<!-- SCREEN 2 — COURSE -->
 <div id="screen-course" class="screen">
   <div class="topbar">
     <button class="back-btn" onclick="goBack('home')">←</button>
@@ -994,9 +965,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════
-     SCREEN 3 — TASK DETAIL
-══════════════════════════════════════════ -->
+<!-- SCREEN 3 — TASK DETAIL -->
 <div id="screen-task" class="screen">
   <div class="topbar">
     <button class="back-btn" onclick="goBack('course')">←</button>
@@ -1008,15 +977,15 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   </div>
   <div class="task-blocks">
 
-    <!-- BLOQUE 0: Descripción -->
+    <!-- Descripción -->
     <div class="desc-block">
       <div class="desc-label">📝 Descripción</div>
       <div class="desc-text" id="desc-text">Sin descripción.</div>
       <textarea class="desc-textarea" id="desc-textarea" placeholder="Escribí los detalles de la tarea, consignas, links, etc..." rows="4"></textarea>
-      <button class="desc-save-btn" onclick="saveDescription()">💾 Guardar descripción</button>
+      <button class="desc-save-btn" id="desc-save-btn" onclick="saveDescription()">💾 Guardar descripción</button>
     </div>
 
-    <!-- BLOQUE 1: PDF Teoría -->
+    <!-- PDF Teoría -->
     <div class="block">
       <div class="block-header">
         <div class="block-icon" style="background:#e8edff">📘</div>
@@ -1036,7 +1005,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
       </div>
     </div>
 
-    <!-- BLOQUE 2: PDF Tarea -->
+    <!-- PDF Tarea -->
     <div class="block">
       <div class="block-header">
         <div class="block-icon" style="background:#ebfbee">📗</div>
@@ -1056,7 +1025,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
       </div>
     </div>
 
-    <!-- BLOQUE 3: Archivos adjuntos -->
+    <!-- Archivos adjuntos -->
     <div class="block">
       <div class="block-header">
         <div class="block-icon" style="background:#fff3e0">📎</div>
@@ -1119,9 +1088,6 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 // ═══════════════════════════════════════════
 const ADMIN_PASSWORD = 'admin123';
 
-// ═══════════════════════════════════════════
-// SUPABASE CONFIG
-// ═══════════════════════════════════════════
 const SUPABASE_URL  = 'https://ebtehnbffwobpdnmftod.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVidGVobmJmZndvYnBkbm1mdG9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0ODM1NzQsImV4cCI6MjA5NTA1OTU3NH0.hzkHQ88Q_GJjH9BZJXkXOj2M3NLP8Sms-QId0jt2N3Y';
 const BUCKET        = 'pdfs';
@@ -1157,13 +1123,20 @@ async function dbInsertTask(task) {
   return res.json();
 }
 
+// ── FIX: Prefer return=minimal para PATCH ──
 async function dbUpdateTask(id, fields) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, {
     method: 'PATCH',
-    headers: SB_HEADERS,
+    headers: {
+      ...SB_HEADERS,
+      'Prefer': 'return=minimal',
+    },
     body: JSON.stringify(fields),
   });
-  if (!res.ok) { const e = await res.json(); throw new Error(e.message || 'Error al actualizar'); }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e.message || `Error ${res.status}`);
+  }
 }
 
 async function dbDeleteTask(id) {
@@ -1177,7 +1150,6 @@ async function dbDeleteTask(id) {
 function publicUrl(path) {
   return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${path}`;
 }
-
 
 // ═══════════════════════════════════════════
 // CURSOS
@@ -1194,7 +1166,7 @@ const COURSES = [
 // ═══════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════
-let tasks          = {}; // { course_id: [task, ...] }
+let tasks          = {};
 let isAdmin        = false;
 let activeCourseId = null;
 let activeTaskId   = null;
@@ -1215,7 +1187,6 @@ function buildTasksMap(rows) {
   return map;
 }
 
-// Auto-borrado: tareas vencidas hace más de 1 día
 async function autoDelete(rows) {
   const today = new Date(); today.setHours(0,0,0,0);
   const toDelete = rows.filter(r => {
@@ -1240,7 +1211,7 @@ function daysLeft(dl) {
 }
 
 function daysChip(d) {
-  if (d < 0)  return `<span class="days-tag days-danger">vencida</span>`;
+  if (d < 0)   return `<span class="days-tag days-danger">vencida</span>`;
   if (d === 0) return `<span class="days-tag days-today">¡hoy!</span>`;
   if (d === 1) return `<span class="days-tag days-danger">1 día</span>`;
   if (d <= 3)  return `<span class="days-tag days-warn">${d} días</span>`;
@@ -1305,7 +1276,6 @@ function renderHome() {
     ${urgent > 0 ? `<div class="stat-pill urgent">⚠ <strong>${urgent}</strong> urgente${urgent!==1?'s':''}</div>` : ''}
   `;
 
-  // Ticker
   const ticker = document.getElementById('ticker-wrap-container');
   if (allTasks.length === 0) {
     ticker.innerHTML = '';
@@ -1319,7 +1289,6 @@ function renderHome() {
         ${t.courseIcon} <strong>${t.name}</strong> — ${label}
       </div>`;
     }).join('');
-    // Duplicate for infinite loop
     ticker.innerHTML = `
       <div class="ticker-wrap">
         <div class="ticker-label">📋 Pendientes</div>
@@ -1412,11 +1381,16 @@ function openTask(cid, tid) {
     <span style="font-size:0.72rem;color:var(--muted)">${c.icon} ${c.name}</span>
   `;
 
-  // Description
   const desc = task.description || '';
   document.getElementById('desc-text').textContent = desc || 'Sin descripción.';
   document.getElementById('desc-text').classList.toggle('empty', !desc);
   document.getElementById('desc-textarea').value = desc;
+
+  // Reset botón guardar descripción
+  const saveBtn = document.getElementById('desc-save-btn');
+  saveBtn.textContent = '💾 Guardar descripción';
+  saveBtn.style.background = '';
+  saveBtn.disabled = false;
 
   renderPdfBlock('teoria',   task);
   renderPdfBlock('tarea',    task);
@@ -1434,16 +1408,31 @@ function openTask(cid, tid) {
   showScreen('task');
 }
 
+// ── FIX: saveDescription con feedback visual y manejo de errores ──
 async function saveDescription() {
   const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
   const desc = document.getElementById('desc-textarea').value.trim();
-  task.description = desc;
+  const btn  = document.getElementById('desc-save-btn');
+
+  btn.textContent = '⏳ Guardando...';
+  btn.disabled = true;
+
   try {
     await dbUpdateTask(activeTaskId, { description: desc });
+    task.description = desc;
     document.getElementById('desc-text').textContent = desc || 'Sin descripción.';
     document.getElementById('desc-text').classList.toggle('empty', !desc);
+    btn.textContent = '✓ Guardado';
+    btn.style.background = '#2f9e44';
+    setTimeout(() => {
+      btn.textContent = '💾 Guardar descripción';
+      btn.style.background = '';
+    }, 2000);
   } catch(e) {
     alert('Error al guardar: ' + e.message);
+    btn.textContent = '💾 Guardar descripción';
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -1519,7 +1508,6 @@ async function uploadPdf(type) {
     progbar.style.width = '70%';
     if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || `Error ${res.status}`); }
 
-    // Update task pdfs in DB
     const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
     if (!task.pdfs[type]) task.pdfs[type] = [];
     task.pdfs[type].push(path);
@@ -1667,7 +1655,6 @@ function disableAdmin() {
 // INIT
 // ═══════════════════════════════════════════
 async function init() {
-  // Mostrar loading
   document.getElementById('courses-list').innerHTML = `
     <div class="empty-state" style="padding:2rem 0">
       <div class="emoji">⏳</div>
