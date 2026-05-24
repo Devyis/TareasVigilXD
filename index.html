@@ -199,6 +199,67 @@ body.admin-mode .topbar-action { display: block; }
 .stat-pill.expo strong { color: var(--expo); }
 .stat-pill.examen { background: var(--examen-light); border-color: #ffc9c9; color: var(--examen); }
 .stat-pill.examen strong { color: var(--examen); }
+.clickable-pill { cursor: pointer; user-select: none; transition: filter 0.15s, transform 0.15s; }
+.clickable-pill:hover { filter: brightness(0.93); transform: translateY(-1px); }
+.clickable-pill:active { transform: translateY(0); }
+
+.pill-dropdown {
+  position: fixed;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-lg);
+  z-index: 500;
+  min-width: 250px;
+  max-width: 320px;
+  max-height: 60vh;
+  overflow-y: auto;
+  animation: dropIn 0.18s ease;
+}
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pill-dropdown-header {
+  padding: 0.7rem 1rem 0.55rem;
+  font-family: 'Caveat', cursive;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink2);
+  border-bottom: 1.5px solid var(--line);
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+}
+.pill-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid var(--line);
+}
+.pill-dropdown-item:last-child { border-bottom: none; }
+.pill-dropdown-item:hover { background: var(--accent-light); }
+.pill-dropdown-item-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  flex: 1;
+  line-height: 1.3;
+}
+.pill-dropdown-item-meta {
+  font-size: 0.63rem;
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+#pill-dropdown-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 499;
+}
 
 /* ── BANNER ── */
 .home-banner {
@@ -1325,6 +1386,8 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   </div>
 </div>
 
+<div id="pill-dropdown-overlay" onclick="closePillDropdown()"></div>
+
 <script>
 // ═══════════════════════════════════════════
 // CONFIG
@@ -1546,12 +1609,13 @@ function renderHome() {
   const tareasCount = total - exposiciones - examenes;
   document.getElementById('home-stats').innerHTML = `
     <div class="stat-pill">📚 <strong>${COURSES.length}</strong> cursos</div>
-    ${tareasCount > 0 ? `<div class="stat-pill">📋 <strong>${tareasCount}</strong> tarea${tareasCount!==1?'s':''}</div>` : ''}
-    ${exposiciones > 0 ? `<div class="stat-pill expo">🎤 <strong>${exposiciones}</strong> exposición${exposiciones!==1?'es':''}</div>` : ''}
-    ${examenes > 0 ? `<div class="stat-pill examen">📝 <strong>${examenes}</strong> examen${examenes!==1?'es':''}</div>` : ''}
+    ${tareasCount > 0 ? `<div class="stat-pill clickable-pill" onclick="togglePillDropdown(event,'tarea')">📋 <strong>${tareasCount}</strong> tarea${tareasCount!==1?'s':''}</div>` : ''}
+    ${exposiciones > 0 ? `<div class="stat-pill expo clickable-pill" onclick="togglePillDropdown(event,'exposicion')">🎤 <strong>${exposiciones}</strong> exposición${exposiciones!==1?'es':''}</div>` : ''}
+    ${examenes > 0 ? `<div class="stat-pill examen clickable-pill" onclick="togglePillDropdown(event,'examen')">📝 <strong>${examenes}</strong> examen${examenes!==1?'es':''}</div>` : ''}
     ${total === 0 ? `<div class="stat-pill">📋 <strong>0</strong> tareas</div>` : ''}
-    ${urgent > 0 ? `<div class="stat-pill urgent">⚠ <strong>${urgent}</strong> urgente${urgent!==1?'s':''}</div>` : ''}
+    ${urgent > 0 ? `<div class="stat-pill urgent clickable-pill" onclick="togglePillDropdown(event,'urgent')">⚠ <strong>${urgent}</strong> urgente${urgent!==1?'s':''}</div>` : ''}
   `;
+  window._pillAllTasks = allTasks;
 
   // ── Banner ──
   const bannerContainer = document.getElementById('home-banner-container');
@@ -1646,6 +1710,73 @@ function renderHome() {
 function openTaskFromTicker(cid, tid) {
   activeCourseId = cid;
   openTask(cid, tid);
+}
+
+function togglePillDropdown(e, type) {
+  e.stopPropagation();
+  const existing = document.getElementById('pill-dropdown');
+  if (existing && existing.dataset.type === type) { closePillDropdown(); return; }
+  closePillDropdown();
+
+  const allTasks = window._pillAllTasks || [];
+  let filtered, title;
+
+  if (type === 'tarea') {
+    filtered = allTasks.filter(t => (t.categoria || 'tarea') === 'tarea');
+    title = '📋 Tareas';
+  } else if (type === 'exposicion') {
+    filtered = allTasks.filter(t => t.categoria === 'exposicion');
+    title = '🎤 Exposiciones';
+  } else if (type === 'examen') {
+    filtered = allTasks.filter(t => t.categoria === 'examen');
+    title = '📝 Exámenes';
+  } else if (type === 'urgent') {
+    filtered = allTasks.filter(t => daysLeft(t.deadline) <= 1);
+    title = '⚠ Urgentes';
+  } else return;
+
+  filtered = filtered.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+  if (!filtered.length) return;
+
+  const itemsHTML = filtered.map(t => {
+    const d = daysLeft(t.deadline);
+    return '<div class="pill-dropdown-item" onclick="closePillDropdown();openTaskFromTicker(\'' + t.courseId + '\',' + t.id + ')">' +
+      '<span style="font-size:1.1rem;flex-shrink:0">' + catIcon(t.categoria) + '</span>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="pill-dropdown-item-name">' + t.name + '</div>' +
+        '<div class="pill-dropdown-item-meta">' + t.courseIcon + ' ' + t.courseName + ' · ' + fmtDate(t.deadline) + '</div>' +
+      '</div>' +
+      '<div style="flex-shrink:0">' + daysChip(d) + '</div>' +
+    '</div>';
+  }).join('');
+
+  const dropdown = document.createElement('div');
+  dropdown.id = 'pill-dropdown';
+  dropdown.className = 'pill-dropdown';
+  dropdown.dataset.type = type;
+  dropdown.innerHTML = '<div class="pill-dropdown-header">' + title + ' <span style="color:var(--muted);font-weight:400;font-size:0.85rem">(' + filtered.length + ')</span></div>' + itemsHTML;
+  document.body.appendChild(dropdown);
+
+  const rect = e.currentTarget.getBoundingClientRect();
+  let top  = rect.bottom + 6;
+  let left = rect.left;
+  dropdown.style.top  = top + 'px';
+  dropdown.style.left = left + 'px';
+
+  requestAnimationFrame(function() {
+    const dw = dropdown.offsetWidth;
+    const dh = dropdown.offsetHeight;
+    if (left + dw > window.innerWidth - 8)  dropdown.style.left = (window.innerWidth - dw - 8) + 'px';
+    if (top  + dh > window.innerHeight - 8) dropdown.style.top  = (rect.top - dh - 6) + 'px';
+  });
+
+  document.getElementById('pill-dropdown-overlay').style.display = 'block';
+}
+
+function closePillDropdown() {
+  const el = document.getElementById('pill-dropdown');
+  if (el) el.remove();
+  document.getElementById('pill-dropdown-overlay').style.display = 'none';
 }
 
 // ═══════════════════════════════════════════
