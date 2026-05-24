@@ -3021,7 +3021,8 @@ function renderPersonalSection() {
           <div class="personal-task-info">
             <div class="personal-task-name">${catIcon(t.categoria)} ${t.name}</div>
             <div class="personal-task-meta">
-              ${t.courseIcon} ${t.courseName} · 📅 ${fmtDate(t.deadline)} · ${daysChip(d)}
+              ${t.courseIcon} ${t.courseName} · 📅 ${fmtDate(t.deadline)}
+              ${d === 0 ? '<span style="background:#e03131;color:white;font-weight:800;padding:0.1rem 0.5rem;border-radius:100px;font-size:0.72rem;">🔥 HOY</span>' : d === 1 ? '<span style="background:#e67700;color:white;font-weight:800;padding:0.1rem 0.5rem;border-radius:100px;font-size:0.72rem;">⏰ MAÑANA</span>' : daysChip(d)}
               ${statusBadge}
             </div>
           </div>
@@ -3155,4 +3156,3 @@ init();
 </script>
 </body>
 </html>
-  
