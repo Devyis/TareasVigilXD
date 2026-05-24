@@ -1296,6 +1296,67 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   transition: all 0.2s;
 }
 .personal-logout-btn:hover { background: rgba(255,255,255,0.28); }
+
+.personal-avatar-img {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255,255,255,0.85);
+  display: block;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+}
+.personal-avatar-emoji {
+  font-size: 4rem;
+  line-height: 1;
+  display: block;
+}
+.personal-avatar-cam {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  background: rgba(255,255,255,0.25);
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,0.4);
+}
+@media (min-width: 768px) {
+  .personal-avatar-img {
+    width: 400px;
+    height: 400px;
+    border-radius: 16px;
+    border-width: 4px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .personal-avatar-emoji {
+    font-size: 10rem;
+  }
+  .personal-avatar-cam {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
+    bottom: -4px;
+    right: -4px;
+  }
+  .personal-username {
+    align-items: flex-start !important;
+    flex-direction: column;
+    gap: 0.8rem !important;
+  }
+  .personal-header {
+    align-items: flex-start !important;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .personal-header-left {
+    gap: 0.5rem !important;
+  }
+}
 .personal-body { padding: 0.8rem; }
 .personal-empty {
   text-align: center;
@@ -2951,10 +3012,10 @@ function renderPersonalSection() {
           <div class="personal-username" style="display:flex;align-items:center;gap:0.5rem;">
             <label style="cursor:pointer;position:relative;flex-shrink:0;" title="Cambiar foto de perfil">
               ${currentUser.avatarUrl
-                ? `<img src="${currentUser.avatarUrl}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.85);display:block;box-shadow:0 4px 14px rgba(0,0,0,0.35);">`
-                : `<span style="font-size:4rem;line-height:1;display:block;">👤</span>`
+                ? `<img src="${currentUser.avatarUrl}" class="personal-avatar-img">`
+                : `<span class="personal-avatar-emoji">👤</span>`
               }
-              <span style="position:absolute;bottom:-2px;right:-2px;background:rgba(255,255,255,0.25);border-radius:50%;width:22px;height:22px;font-size:0.75rem;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.4);">📷</span>
+              <span class="personal-avatar-cam">📷</span>
               <input type="file" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadAvatar(this.files[0])">
             </label>
             ${currentUser.displayName}
