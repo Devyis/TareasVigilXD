@@ -2951,10 +2951,10 @@ function renderPersonalSection() {
           <div class="personal-username" style="display:flex;align-items:center;gap:0.5rem;">
             <label style="cursor:pointer;position:relative;flex-shrink:0;" title="Cambiar foto de perfil">
               ${currentUser.avatarUrl
-                ? `<img src="${currentUser.avatarUrl}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.7);display:block;">`
-                : `<span style="font-size:1.5rem;line-height:1;display:block;">👤</span>`
+                ? `<img src="${currentUser.avatarUrl}" style="width:80px;height:80px;border-radius:50%;object-fit:cover;border:3px solid rgba(255,255,255,0.85);display:block;box-shadow:0 4px 14px rgba(0,0,0,0.35);">`
+                : `<span style="font-size:4rem;line-height:1;display:block;">👤</span>`
               }
-              <span style="position:absolute;bottom:-2px;right:-2px;background:rgba(255,255,255,0.25);border-radius:50%;width:14px;height:14px;font-size:0.55rem;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.4);">📷</span>
+              <span style="position:absolute;bottom:-2px;right:-2px;background:rgba(255,255,255,0.25);border-radius:50%;width:22px;height:22px;font-size:0.75rem;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.4);">📷</span>
               <input type="file" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadAvatar(this.files[0])">
             </label>
             ${currentUser.displayName}
