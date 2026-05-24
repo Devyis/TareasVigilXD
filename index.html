@@ -1989,6 +1989,30 @@ function renderHome() {
           <div class="banner-today-list">${itemsHTML}</div>
         </div>
       </div>`;
+ } else {
+  // Filtrar tareas que vencen MAÑANA (días = 1)
+  const tomorrowTasks = sorted.filter(t => daysLeft(t.deadline) === 1);
+  
+  if (tomorrowTasks.length > 0) {
+    // Mostrar TODAS las tareas de mañana con imagen de fondo
+    const itemsHTML = tomorrowTasks.map(t =>
+      `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
+        <span style="font-size:1rem">${catIcon(t.categoria)}</span>
+        <span class="banner-today-item-name">${t.name}</span>
+        <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+      </div>`
+    ).join('');
+    
+    bannerContainer.innerHTML = `
+      <div class="home-banner" style="margin:1.2rem 1.2rem 0;height:auto;min-height:140px">
+        <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
+        <div class="home-banner-overlay" style="background:linear-gradient(135deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.2) 100%);">
+          <div class="home-banner-text" style="color:white;text-shadow:0 1px 6px rgba(0,0,0,0.5);margin-bottom:0.5rem">
+            ⏰ ¡Entrega mañana! (${tomorrowTasks.length} tarea${tomorrowTasks.length !== 1 ? 's' : ''})
+          </div>
+          <div class="banner-today-list">${itemsHTML}</div>
+        </div>
+      </div>`;
   } else {
     // No hay tareas urgentes (ni hoy ni mañana) - mostrar siguiente tarea
     const urgMsg = `${total} tarea${total !== 1 ? 's' : ''} pendiente${total !== 1 ? 's' : ''}`;
