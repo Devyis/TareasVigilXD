@@ -2720,7 +2720,7 @@ async function loginPersonal() {
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(u)}&password=eq.${encodeURIComponent(p)}&select=username,display_name`,
+      `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(u)}&password=eq.${encodeURIComponent(p)}&select=username,display_name,avatar_url`,
       { headers: SB_HEADERS }
     );
     const rows = await res.json();
@@ -2731,7 +2731,7 @@ async function loginPersonal() {
       return;
     }
     errEl.classList.remove('show');
-    currentUser = { username: rows[0].username, displayName: rows[0].display_name };
+    currentUser = { username: rows[0].username, displayName: rows[0].display_name, avatarUrl: rows[0].avatar_url || '' };
     localStorage.setItem('personal_user', JSON.stringify(currentUser));
     await loadPersonalStates();
     renderPersonalSection();
@@ -2772,7 +2772,7 @@ async function registerPersonal() {
     if (!res.ok) throw new Error();
 
     errEl.classList.remove('show');
-    currentUser = { username: u, displayName: name };
+    currentUser = { username: u, displayName: name, avatarUrl: '' };
     localStorage.setItem('personal_user', JSON.stringify(currentUser));
     await loadPersonalStates();
     renderPersonalSection();
@@ -2785,6 +2785,62 @@ async function registerPersonal() {
 function toggleLoginMode() {
   _loginMode = _loginMode === 'login' ? 'register' : 'login';
   renderPersonalSection();
+}
+
+async function uploadAvatar(file) {
+  // Mostrar loading
+  const labels = document.querySelectorAll('.personal-username label');
+  labels.forEach(l => l.style.opacity = '0.5');
+
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const allowed = ['jpg','jpeg','png','gif','webp'];
+    if (!allowed.includes(ext)) { alert('Solo se permiten imágenes (jpg, png, gif, webp)'); return; }
+
+    const fileName = `${currentUser.username}_${Date.now()}.${ext}`;
+
+    // 1. Subir al Storage bucket "avatars"
+    const uploadRes = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/avatars/${fileName}`,
+      {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_ANON,
+          'Authorization': `Bearer ${SUPABASE_ANON}`,
+          'Content-Type': file.type || 'image/jpeg',
+          'x-upsert': 'true'
+        },
+        body: file
+      }
+    );
+    if (!uploadRes.ok) {
+      const err = await uploadRes.json().catch(() => ({}));
+      throw new Error(err.message || `Error ${uploadRes.status} al subir imagen`);
+    }
+
+    // 2. Construir URL pública
+    const avatarUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${fileName}`;
+
+    // 3. Guardar URL en la tabla users
+    const patchRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(currentUser.username)}`,
+      {
+        method: 'PATCH',
+        headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
+        body: JSON.stringify({ avatar_url: avatarUrl })
+      }
+    );
+    if (!patchRes.ok) throw new Error('Error al guardar la URL en la base de datos');
+
+    // 4. Actualizar currentUser local y re-render
+    currentUser.avatarUrl = avatarUrl;
+    localStorage.setItem('personal_user', JSON.stringify(currentUser));
+    renderPersonalSection();
+
+  } catch(e) {
+    alert('Error al subir foto: ' + e.message);
+    labels.forEach(l => l.style.opacity = '1');
+  }
 }
 
 function logoutUser() {
@@ -2892,7 +2948,17 @@ function renderPersonalSection() {
       <div class="personal-header">
         <div class="personal-header-left">
           <div class="personal-label">📌 Personal</div>
-          <div class="personal-username">👤 ${currentUser.displayName}</div>
+          <div class="personal-username" style="display:flex;align-items:center;gap:0.5rem;">
+            <label style="cursor:pointer;position:relative;flex-shrink:0;" title="Cambiar foto de perfil">
+              ${currentUser.avatarUrl
+                ? `<img src="${currentUser.avatarUrl}" style="width:34px;height:34px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.7);display:block;">`
+                : `<span style="font-size:1.5rem;line-height:1;display:block;">👤</span>`
+              }
+              <span style="position:absolute;bottom:-2px;right:-2px;background:rgba(255,255,255,0.25);border-radius:50%;width:14px;height:14px;font-size:0.55rem;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,0.4);">📷</span>
+              <input type="file" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadAvatar(this.files[0])">
+            </label>
+            ${currentUser.displayName}
+          </div>
           <div class="personal-falta">${faltaMsg}</div>
         </div>
         <button class="personal-logout-btn" onclick="logoutUser()">Salir</button>
