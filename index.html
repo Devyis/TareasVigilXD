@@ -1478,9 +1478,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     </div>
     <div class="home-stats" id="home-stats"></div>
   </div>
-  <div id="home-banner-container"></div>
+ <div id="home-banner-container"></div>
+  <div id="ticker-wrap-container"></div>        <!-- ← ticker PRIMERO -->
   <div id="personal-section-container"></div>
-  <div id="ticker-wrap-container"></div>
   <div class="courses-list" id="courses-list"></div>
 </div>
 
@@ -2570,24 +2570,33 @@ function renderPersonalSection() {
 
   const sorted = [...allTasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
+ // ✅ CÓDIGO CORREGIDO
   const itemsHTML = sorted.length === 0
     ? `<div class="personal-empty">No hay tareas cargadas aún.</div>`
     : sorted.map(t => {
         const d = daysLeft(t.deadline);
+        const hecho     = t.state.hecho;
+        const entregado = t.state.entregado;
         const doneClass = t.done ? 'done' : '';
         const checkContent = t.done ? '✓' : '';
-        const doneBadge = t.done ? `<span class="personal-done-badge">✅ Ya lo hiciste y entregaste</span>` : '';
+        let statusBadge = '';
+        if (t.done) {
+          statusBadge = `<span class="personal-done-badge">✅ Ya lo hiciste y entregaste</span>`;
+        } else if (hecho && !entregado) {
+          statusBadge = `<span class="personal-done-badge" style="color:#e67700;border-color:#e67700;background:#fff3e0">⚠️ TE FALTA ENTREGARLO</span>`;
+        }
         return `<div class="personal-task-item ${doneClass}" onclick="openPersonalTaskModal('${t.courseId}',${t.id})">
           <div class="personal-task-check">${checkContent}</div>
           <div class="personal-task-info">
             <div class="personal-task-name">${catIcon(t.categoria)} ${t.name}</div>
             <div class="personal-task-meta">
               ${t.courseIcon} ${t.courseName} · 📅 ${fmtDate(t.deadline)} · ${daysChip(d)}
-              ${doneBadge}
+              ${statusBadge}
             </div>
           </div>
         </div>`;
       }).join('');
+// ✅ FIN DEL CAMBIO
 
   container.innerHTML = `
     <div class="personal-section">
@@ -2641,16 +2650,27 @@ function closePersonalModal() {
   document.getElementById('personal-task-modal').classList.remove('open');
 }
 
+// ✅ CÓDIGO CORREGIDO
 async function savePersonalState() {
   if (!currentUser || _personalModalTid === null) return;
   const hecho     = document.getElementById('ptm-hecho').checked;
   const entregado = document.getElementById('ptm-entregado').checked;
   _personalStates[_personalModalTid] = { hecho, entregado };
+  // Re-render WITHOUT closing modal so user can keep toggling
+  // Solo actualizamos el DOM de la lista personal en background
+  const container = document.getElementById('personal-section-container');
+  // Guardamos referencia antes de re-render
+  const tid = _personalModalTid;
+  const cid = _personalModalCid;
   renderPersonalSection();
+  // Restaurar referencia (renderPersonalSection la limpia)
+  _personalModalTid = tid;
+  _personalModalCid = cid;
   try {
     await savePersonalStateToDb(_personalModalTid, hecho, entregado);
   } catch(e) { console.warn('Error guardando estado', e); }
 }
+// ✅ FIN DEL CAMBIO
 
 // ═══════════════════════════════════════════
 // INIT
