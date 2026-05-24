@@ -537,6 +537,19 @@ body.admin-mode .topbar-action { display: block; }
   flex-shrink: 0;
 }
 
+.task-count-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  background: var(--paper2);
+  color: var(--ink2);
+  min-width: 24px;
+  text-align: center;
+}
+.task-count-badge.has-tasks { background: var(--accent-light); color: var(--accent); }
+.task-count-badge.urgent { background: var(--red-light); color: var(--red); }
+
 .task-badge {
   font-size: 0.65rem;
   font-weight: 700;
@@ -2115,6 +2128,10 @@ function renderHome() {
     const ct = tasks[c.id] || [];
     const hasUrgentTasks = ct.length > 0 && Math.min(...ct.map(t => daysLeft(t.deadline))) <= 1;
     const accentColor = hasUrgentTasks ? 'var(--red)' : c.color;
+    const taskCount = ct.length;
+    let countClass = '';
+    if (taskCount > 0) countClass = 'has-tasks';
+    if (hasUrgentTasks) countClass = 'urgent';
     return `<div class="course-card" onclick="openCourse('${c.id}')">
       <div class="course-card-accent" style="background:${accentColor}"></div>
       <div class="course-card-inner">
@@ -2124,6 +2141,7 @@ function renderHome() {
           <div class="course-card-sub">${c.id.toUpperCase()}</div>
         </div>
         <div class="course-card-right">
+          <span class="task-count-badge ${countClass}">${taskCount}</span>
           <span class="chevron">›</span>
         </div>
       </div>
