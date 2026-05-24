@@ -3044,12 +3044,14 @@ function renderPersonalSection() {
 
   container.innerHTML = `
     <div class="personal-section">
-      <div class="personal-header">
-        <div class="personal-header-left">
-          <div class="personal-label">📌 Personal</div>
-          <div class="personal-username" style="display:flex;flex-direction:column;align-items:flex-start;gap:0.4rem;">
+      <div class="personal-header" style="align-items:flex-start;">
+        <div style="display:flex;gap:1rem;align-items:flex-start;flex:1;min-width:0;">
+
+          <!-- IZQUIERDA: foto + nombre + falta -->
+          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0.3rem;flex-shrink:0;">
+            <div class="personal-label">📌 Personal</div>
             <div style="font-family:'Caveat',cursive;font-size:2rem;font-weight:700;color:white;line-height:1.1;">${currentUser.displayName}</div>
-            <div style="font-size:1rem;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:0.4rem;">${faltaMsg}</div>
+            <div style="font-size:1rem;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:0.2rem;">${faltaMsg}</div>
             <label style="cursor:pointer;position:relative;flex-shrink:0;" title="Cambiar foto de perfil">
               ${currentUser.avatarUrl
                 ? `<img src="${currentUser.avatarUrl}" class="personal-avatar-img">`
@@ -3059,14 +3061,17 @@ function renderPersonalSection() {
               <input type="file" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadAvatar(this.files[0])">
             </label>
           </div>
+
+          <!-- DERECHA: título pendientes + lista tareas -->
+          <div style="flex:1;min-width:0;padding-top:0.2rem;">
+            <div style="font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:#ffd43b;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.4rem;">
+              📋 Pendientes
+            </div>
+            <div>${itemsHTML}</div>
+          </div>
+
         </div>
-        <button class="personal-logout-btn" onclick="logoutUser()">Salir</button>
-      </div>
-      <div class="personal-body">
-        <div style="font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:#ffd43b;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.4rem;">
-          📋 Pendientes
-        </div>
-        ${itemsHTML}
+        <button class="personal-logout-btn" onclick="logoutUser()" style="flex-shrink:0;margin-left:0.5rem;">Salir</button>
       </div>
     </div>`;
 }
