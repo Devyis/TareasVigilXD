@@ -1935,6 +1935,7 @@ function renderHome() {
 
   // ── Banner ──
   const bannerContainer = document.getElementById('home-banner-container');
+  
   if (allTasks.length === 0) {
     bannerContainer.innerHTML = `
       <div class="home-banner no-tasks" style="margin:1.2rem 1.2rem 0">
@@ -1945,11 +1946,57 @@ function renderHome() {
   } else {
     const sorted = allTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
     const todayTasks = sorted.filter(t => daysLeft(t.deadline) === 0);
+    const tomorrowTasks = sorted.filter(t => daysLeft(t.deadline) === 1);
     const nextTask   = sorted[0];
     const d          = daysLeft(nextTask.deadline);
-
-    if (todayTasks.length > 0) {
-      // Show ALL tasks due today
+    
+    let bannerHTML = '';
+    
+    // Si hay tareas hoy Y mañana, mostrar ambos banners lado a lado
+    if (todayTasks.length > 0 && tomorrowTasks.length > 0) {
+      const todayItemsHTML = todayTasks.map(t =>
+        `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
+          <span style="font-size:1rem">${catIcon(t.categoria)}</span>
+          <span class="banner-today-item-name">${t.name}</span>
+          <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+        </div>`
+      ).join('');
+      
+      const tomorrowItemsHTML = tomorrowTasks.map(t =>
+        `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
+          <span style="font-size:1rem">${catIcon(t.categoria)}</span>
+          <span class="banner-today-item-name">${t.name}</span>
+          <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+        </div>`
+      ).join('');
+      
+      bannerHTML = `
+        <div style="display:flex;gap:0.6rem;margin:1.2rem 1.2rem 0;flex-wrap:wrap;">
+          <div class="home-banner" style="flex:1;min-width:calc(50% - 0.3rem);background: linear-gradient(135deg,#c92a2a,#e03131);">
+            <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.7rem 0.8rem;">
+              <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.4rem;font-size:1rem;">
+                🚨 ¡Hoy! (${todayTasks.length})
+              </div>
+              <div class="banner-today-list" style="max-height:100px;">${todayItemsHTML}</div>
+            </div>
+          </div>
+          <div class="home-banner" style="flex:1;min-width:calc(50% - 0.3rem);background: #2a2a3a;">
+            <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.7rem 0.8rem;display:flex;align-items:center;gap:0.6rem;">
+              <div style="flex-shrink:0;width:70px;height:70px;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+                <img src="https://files.catbox.moe/zk9uxb.jpg" alt="Entrega mañana" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.3rem;font-size:0.95rem;">
+                  ⏰ Mañana (${tomorrowTasks.length})
+                </div>
+                <div class="banner-today-list" style="max-height:100px;">${tomorrowItemsHTML}</div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    } 
+    // Solo hay tareas hoy
+    else if (todayTasks.length > 0) {
       const itemsHTML = todayTasks.map(t =>
         `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
           <span style="font-size:1rem">${catIcon(t.categoria)}</span>
@@ -1957,7 +2004,7 @@ function renderHome() {
           <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
         </div>`
       ).join('');
-      bannerContainer.innerHTML = `
+      bannerHTML = `
         <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: linear-gradient(135deg,#c92a2a,#e03131);">
           <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;">
             <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.5rem">
@@ -1966,61 +2013,59 @@ function renderHome() {
             <div class="banner-today-list">${itemsHTML}</div>
           </div>
         </div>`;
-    } else {
-  // Filtrar tareas que vencen MAÑANA (días = 1)
-  const tomorrowTasks = sorted.filter(t => daysLeft(t.deadline) === 1);
-  
-  if (tomorrowTasks.length > 0) {
-    // Mostrar TODAS las tareas de mañana
-    const itemsHTML = tomorrowTasks.map(t =>
-      `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
-        <span style="font-size:1rem">${catIcon(t.categoria)}</span>
-        <span class="banner-today-item-name">${t.name}</span>
-        <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
-      </div>`
-    ).join('');
-    
-    bannerContainer.innerHTML = `
-      <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: #2a2a3a;">
-        <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;display:flex;align-items:center;gap:1rem;">
-          <div style="flex-shrink:0;width:100px;height:100px;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
-            <img src="https://files.catbox.moe/zk9uxb.jpg" alt="Entrega mañana" style="width:100%;height:100%;object-fit:cover;">
-          </div>
-          <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.5rem;flex:1;">
-            ⏰ ¡Entrega mañana! (${tomorrowTasks.length} tarea${tomorrowTasks.length !== 1 ? 's' : ''})
-          </div>
-          <div class="banner-today-list" style="flex:1;min-width:0;">${itemsHTML}</div>
-        </div>
-      </div>`;
-  } else {
-    // No hay tareas urgentes (ni hoy ni mañana) - mostrar siguiente tarea o GIF de relajado
-    const urgMsg = `${total} tarea${total !== 1 ? 's' : ''} pendiente${total !== 1 ? 's' : ''}`;
-    
-    // Si no hay tareas pendientes en absoluto, mostramos el GIF relajado
-    if (total === 0) {
-      bannerContainer.innerHTML = `
+    } 
+    // Solo hay tareas mañana
+    else if (tomorrowTasks.length > 0) {
+      const itemsHTML = tomorrowTasks.map(t =>
+        `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
+          <span style="font-size:1rem">${catIcon(t.categoria)}</span>
+          <span class="banner-today-item-name">${t.name}</span>
+          <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+        </div>`
+      ).join('');
+      
+      bannerHTML = `
         <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: #2a2a3a;">
           <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;display:flex;align-items:center;gap:1rem;">
             <div style="flex-shrink:0;width:100px;height:100px;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
-              <img src="https://files.catbox.moe/8nb3gn.gif" alt="Sin tareas" style="width:100%;height:100%;object-fit:cover;">
+              <img src="https://files.catbox.moe/zk9uxb.jpg" alt="Entrega mañana" style="width:100%;height:100%;object-fit:cover;">
             </div>
             <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.5rem;flex:1;">
-              🎉 ¡Todo al día! Disfruta tu tiempo libre.
+              ⏰ ¡Entrega mañana! (${tomorrowTasks.length} tarea${tomorrowTasks.length !== 1 ? 's' : ''})
             </div>
+            <div class="banner-today-list" style="flex:1;min-width:0;">${itemsHTML}</div>
           </div>
         </div>`;
-    } else {
-      bannerContainer.innerHTML = `
-        <div class="home-banner" style="margin:1.2rem 1.2rem 0;height:140px">
-          <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
-          <div class="home-banner-overlay">
-            <div class="home-banner-text">📚 ${urgMsg}</div>
-            <div class="home-banner-text sub">${catIcon(nextTask.categoria)} ${nextTask.name} · ${nextTask.courseIcon} ${nextTask.courseName}</div>
-          </div>
-        </div>`;
+    } 
+    // No hay tareas urgentes (ni hoy ni mañana)
+    else {
+      const urgMsg = `${total} tarea${total !== 1 ? 's' : ''} pendiente${total !== 1 ? 's' : ''}`;
+      
+      if (total === 0) {
+        bannerHTML = `
+          <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: #2a2a3a;">
+            <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;display:flex;align-items:center;gap:1rem;">
+              <div style="flex-shrink:0;width:100px;height:100px;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+                <img src="https://files.catbox.moe/8nb3gn.gif" alt="Sin tareas" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.5rem;flex:1;">
+                🎉 ¡Todo al día! Disfruta tu tiempo libre.
+              </div>
+            </div>
+          </div>`;
+      } else {
+        bannerHTML = `
+          <div class="home-banner" style="margin:1.2rem 1.2rem 0;height:140px">
+            <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
+            <div class="home-banner-overlay">
+              <div class="home-banner-text">📚 ${urgMsg}</div>
+              <div class="home-banner-text sub">${catIcon(nextTask.categoria)} ${nextTask.name} · ${nextTask.courseIcon} ${nextTask.courseName}</div>
+            </div>
+          </div>`;
+      }
     }
-  }
-}
+    
+    bannerContainer.innerHTML = bannerHTML;
   }
 
   // ── Ticker ──
