@@ -2773,6 +2773,22 @@ function loadCurrentUser() {
   try { currentUser = JSON.parse(localStorage.getItem('personal_user')) || null; } catch(e) { currentUser = null; }
 }
 
+async function refreshCurrentUserFromDb() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(currentUser.username)}&select=username,display_name,avatar_url`,
+      { headers: SB_HEADERS }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    if (!rows.length) return;
+    currentUser.displayName = rows[0].display_name;
+    currentUser.avatarUrl   = rows[0].avatar_url || '';
+    localStorage.setItem('personal_user', JSON.stringify(currentUser));
+  } catch(e) { console.warn('No se pudo refrescar usuario', e); }
+}
+
 async function loginPersonal() {
   const u = document.getElementById('personal-login-user').value.trim().toLowerCase();
   const p = document.getElementById('personal-login-pass').value;
@@ -3107,6 +3123,7 @@ async function init() {
     tasks = buildTasksMap(rows);
 
     if (currentUser) {
+      await refreshCurrentUserFromDb();
       await loadPersonalStates();
     }
 
