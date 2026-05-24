@@ -254,6 +254,12 @@ body.admin-mode .topbar-action { display: block; }
   color: var(--muted);
   margin-top: 0.1rem;
 }
+.pill-dropdown-item-date {
+  font-size: 0.63rem;
+  color: var(--accent);
+  margin-top: 0.1rem;
+  font-weight: 600;
+}
 #pill-dropdown-overlay {
   display: none;
   position: fixed;
@@ -440,6 +446,12 @@ body.admin-mode .topbar-action { display: block; }
 }
 .ticker-task-days.danger { background: rgba(255,100,100,0.4); }
 .ticker-task-days.today  { background: rgba(255,60,60,0.7); animation: blink 1.4s infinite; }
+.ticker-task-date {
+  font-size: 0.6rem;
+  color: rgba(255,255,255,0.6);
+  margin-top: 0.1rem;
+  display: block;
+}
 
 @keyframes ticker-scroll {
   0%   { transform: translateX(0); }
@@ -1541,6 +1553,13 @@ function fmtDate(iso) {
   return `${d}/${m}/${y}`;
 }
 
+function fmtDateFull(iso) {
+  const date = new Date(iso + 'T00:00:00');
+  const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  return `${dias[date.getDay()]} ${date.getDate()} ${meses[date.getMonth()]}`;
+}
+
 function hasPdfs(task) {
   return (task.pdfs.teoria.length + task.pdfs.tarea.length + task.pdfs.adjuntos.length) > 0;
 }
@@ -1677,6 +1696,7 @@ function renderHome() {
         <div class="ticker-task-name">${catIcon(t.categoria)} ${t.name}</div>
         <div class="ticker-task-course">(${t.courseName})</div>
         <span class="ticker-task-days ${dayCls}">${label}</span>
+        <span class="ticker-task-date">${fmtDateFull(t.deadline)}</span>
       </div>`;
     }).join('');
     ticker.innerHTML = `
@@ -1744,7 +1764,8 @@ function togglePillDropdown(e, type) {
       '<span style="font-size:1.1rem;flex-shrink:0">' + catIcon(t.categoria) + '</span>' +
       '<div style="flex:1;min-width:0">' +
         '<div class="pill-dropdown-item-name">' + t.name + '</div>' +
-        '<div class="pill-dropdown-item-meta">' + t.courseIcon + ' ' + t.courseName + ' · ' + fmtDate(t.deadline) + '</div>' +
+        '<div class="pill-dropdown-item-meta">' + t.courseIcon + ' ' + t.courseName + '</div>' +
+        '<div class="pill-dropdown-item-date">📅 ' + fmtDateFull(t.deadline) + ' · ' + fmtDate(t.deadline) + '</div>' +
       '</div>' +
       '<div style="flex-shrink:0">' + daysChip(d) + '</div>' +
     '</div>';
