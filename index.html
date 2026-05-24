@@ -2470,15 +2470,14 @@ function disableAdmin() {
 // ═══════════════════════════════════════════
 // PERSONAL — USUARIOS Y ESTADO (Supabase)
 // ═══════════════════════════════════════════
-const USERS = [
-  { username: 'prueba', password: '1234', displayName: 'Usuario Prueba' },
-  // Agregá más usuarios aquí: { username: 'nombre', password: 'pass', displayName: 'Nombre Completo' }
-];
-
+// ═══════════════════════════════════════════
+// PERSONAL — USUARIOS Y ESTADO (Supabase)
+// ═══════════════════════════════════════════
 let currentUser = null;
 let _personalModalCid = null;
 let _personalModalTid = null;
-let _personalStates = {}; // cache local { taskId: { hecho, entregado } }
+let _personalStates = {};
+let _loginMode = 'login'; // 'login' | 'register'
 
 function loadCurrentUser() {
   try { currentUser = JSON.parse(localStorage.getItem('personal_user')) || null; } catch(e) { currentUser = null; }
@@ -2488,17 +2487,74 @@ async function loginPersonal() {
   const u = document.getElementById('personal-login-user').value.trim().toLowerCase();
   const p = document.getElementById('personal-login-pass').value;
   const errEl = document.getElementById('personal-login-err');
-  const found = USERS.find(x => x.username === u && x.password === p);
-  if (!found) {
-    errEl.textContent = 'Usuario o contraseña incorrectos ✗';
+  if (!u || !p) { errEl.textContent = 'Completá todos los campos ✗'; errEl.classList.add('show'); return; }
+
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(u)}&password=eq.${encodeURIComponent(p)}&select=username,display_name`,
+      { headers: SB_HEADERS }
+    );
+    const rows = await res.json();
+    if (!rows.length) {
+      errEl.textContent = 'Usuario o contraseña incorrectos ✗';
+      errEl.classList.add('show');
+      document.getElementById('personal-login-pass').value = '';
+      return;
+    }
+    errEl.classList.remove('show');
+    currentUser = { username: rows[0].username, displayName: rows[0].display_name };
+    localStorage.setItem('personal_user', JSON.stringify(currentUser));
+    await loadPersonalStates();
+    renderPersonalSection();
+  } catch(e) {
+    errEl.textContent = 'Error de conexión ✗';
     errEl.classList.add('show');
-    document.getElementById('personal-login-pass').value = '';
-    return;
   }
-  errEl.classList.remove('show');
-  currentUser = found;
-  localStorage.setItem('personal_user', JSON.stringify(found));
-  await loadPersonalStates();
+}
+
+async function registerPersonal() {
+  const u    = document.getElementById('personal-login-user').value.trim().toLowerCase();
+  const p    = document.getElementById('personal-login-pass').value;
+  const name = document.getElementById('personal-login-name').value.trim();
+  const errEl = document.getElementById('personal-login-err');
+  if (!u || !p || !name) { errEl.textContent = 'Completá todos los campos ✗'; errEl.classList.add('show'); return; }
+  if (u.length < 3)      { errEl.textContent = 'El usuario debe tener al menos 3 caracteres ✗'; errEl.classList.add('show'); return; }
+  if (p.length < 4)      { errEl.textContent = 'La contraseña debe tener al menos 4 caracteres ✗'; errEl.classList.add('show'); return; }
+
+  try {
+    // Verificar si ya existe
+    const check = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(u)}&select=username`,
+      { headers: SB_HEADERS }
+    );
+    const existing = await check.json();
+    if (existing.length) {
+      errEl.textContent = 'Ese usuario ya existe ✗';
+      errEl.classList.add('show');
+      return;
+    }
+
+    // Crear usuario
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/users`, {
+      method: 'POST',
+      headers: { ...SB_HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ username: u, password: p, display_name: name }),
+    });
+    if (!res.ok) throw new Error();
+
+    errEl.classList.remove('show');
+    currentUser = { username: u, displayName: name };
+    localStorage.setItem('personal_user', JSON.stringify(currentUser));
+    await loadPersonalStates();
+    renderPersonalSection();
+  } catch(e) {
+    errEl.textContent = 'Error al crear cuenta ✗';
+    errEl.classList.add('show');
+  }
+}
+
+function toggleLoginMode() {
+  _loginMode = _loginMode === 'login' ? 'register' : 'login';
   renderPersonalSection();
 }
 
@@ -2536,19 +2592,23 @@ function renderPersonalSection() {
   if (!container) return;
 
   if (!currentUser) {
+   const isReg = _loginMode === 'register';
     container.innerHTML = `
       <div class="personal-login-box">
-        <div class="personal-login-title">👤 Mi sección personal</div>
-        <div class="personal-login-sub">Ingresá para ver tu progreso personalizado. Se guarda en la nube — funciona en cualquier dispositivo.</div>
+        <div class="personal-login-title">${isReg ? '📝 Crear cuenta' : '👤 Mi sección personal'}</div>
+        <div class="personal-login-sub">${isReg ? 'Creá tu cuenta gratuita. Tus datos se guardan en la nube.' : 'Ingresá para ver tu progreso personalizado. Se guarda en la nube — funciona en cualquier dispositivo.'}</div>
         <div class="personal-login-row">
+          ${isReg ? `<input class="personal-login-input" id="personal-login-name" type="text" placeholder="tu nombre completo" onkeydown="if(event.key==='Enter')registerPersonal()">` : ''}
           <input class="personal-login-input" id="personal-login-user" type="text" placeholder="usuario"
-            onkeydown="if(event.key==='Enter')loginPersonal()">
+            onkeydown="if(event.key==='Enter')${isReg ? 'registerPersonal' : 'loginPersonal'}()">
           <input class="personal-login-input" id="personal-login-pass" type="password" placeholder="contraseña"
-            onkeydown="if(event.key==='Enter')loginPersonal()">
-          <button class="personal-login-btn" onclick="loginPersonal()">Entrar</button>
+            onkeydown="if(event.key==='Enter')${isReg ? 'registerPersonal' : 'loginPersonal'}()">
+          <button class="personal-login-btn" onclick="${isReg ? 'registerPersonal' : 'loginPersonal'}()">${isReg ? 'Crear cuenta' : 'Entrar'}</button>
         </div>
         <div class="personal-login-err" id="personal-login-err"></div>
-        <div class="personal-login-hint">💡 Prueba con: <strong>prueba</strong> / <strong>1234</strong></div>
+        <div class="personal-login-hint" style="cursor:pointer;color:var(--accent)" onclick="toggleLoginMode()">
+          ${isReg ? '← Ya tengo cuenta, iniciar sesión' : '¿No tenés cuenta? Registrate gratis →'}
+        </div>
       </div>`;
     return;
   }
