@@ -1957,6 +1957,8 @@ function renderFileBlock(type, task) {
     const name = file.split('/').pop();
     const icon = getFileIcon(file);
     const type_ = getFileType(file);
+    const isPptx = file.toLowerCase().endsWith('.pptx');
+    const viewUrl = isPptx ? `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=false` : url;
     return `
     <div class="pdf-item">
       <div class="pdf-item-icon">${icon}</div>
@@ -1965,7 +1967,7 @@ function renderFileBlock(type, task) {
         <div class="pdf-item-sub">${type_}</div>
       </div>
       <div class="pdf-item-actions">
-        <a class="pdf-btn" href="${url}" target="_blank">👁 Ver</a>
+        <a class="pdf-btn" href="${viewUrl}" target="_blank">👁 Ver</a>
         <a class="pdf-btn download" href="${url}" download="${name}">⬇ Descargar</a>
         <button class="delete-pdf-btn" onclick="deleteFile(event,'${type}',${i})">✕</button>
       </div>
