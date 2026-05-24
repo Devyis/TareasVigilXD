@@ -1462,6 +1462,54 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 }
 .personal-toggle input:checked + .personal-toggle-slider { background: var(--green); }
 .personal-toggle input:checked + .personal-toggle-slider::before { transform: translateX(18px); }
+  /* ── PERSONAL STATUS BLOCK en task detail ── */
+.task-personal-block {
+  margin: 1rem 1.2rem 0;
+  background: linear-gradient(135deg, #1a1a2e, #3b5bdb);
+  border-radius: 14px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.task-personal-block-title {
+  font-family: 'Caveat', cursive;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 0.5rem;
+}
+.task-personal-toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+}
+.task-personal-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+.task-personal-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  flex: 1;
+}
+.task-personal-done-all {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #b2f2bb;
+  background: rgba(47,158,68,0.25);
+  border: 1.5px solid rgba(47,158,68,0.5);
+  border-radius: 100px;
+  padding: 0.2rem 0.7rem;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin-top: 0.3rem;
+}
 </style>
 </head>
 <body>
@@ -1504,9 +1552,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 <!-- SCREEN 3 — TASK DETAIL -->
 <div id="screen-task" class="screen">
   <div class="topbar">
-    <button class="back-btn" onclick="goBack('course')">←</button>
+    <button class="back-btn" id="task-back-btn" onclick="goBack('course')">←</button>
     <div class="topbar-title" id="task-topbar-title"></div>
   </div>
+  <div id="task-personal-status-block"></div>
   <div class="task-hero">
     <div class="task-hero-name" id="task-hero-name"></div>
     <div class="task-hero-meta" id="task-hero-meta"></div>
@@ -2125,13 +2174,67 @@ function taskCardHTML(t, cid, c) {
 // ═══════════════════════════════════════════
 // RENDER TASK DETAIL
 // ═══════════════════════════════════════════
-function openTask(cid, tid) {
+let _taskOpenedFromPersonal = false;
+function renderTaskPersonalBlock(cid, tid) {
+  const block = document.getElementById('task-personal-status-block');
+  if (!block) return;
+  if (!currentUser) { block.innerHTML = ''; return; }
+
+  const state = _personalStates[tid] || { hecho: false, entregado: false };
+
+  const doneTag = (state.hecho && state.entregado)
+    ? `<div class="task-personal-done-all">✅ Completada</div>` : '';
+
+  block.innerHTML = `
+    <div class="task-personal-block">
+      <div class="task-personal-toggles">
+        <div class="task-personal-title">📌 Mi progreso</div>
+        <div class="task-personal-row">
+          <div class="task-personal-label">✅ Ya lo hice</div>
+          <label class="personal-toggle">
+            <input type="checkbox" id="tpb-hecho" ${state.hecho ? 'checked' : ''}
+              onchange="saveTaskPersonalBlock('${cid}',${tid})">
+            <div class="personal-toggle-slider"></div>
+          </label>
+        </div>
+        <div class="task-personal-row">
+          <div class="task-personal-label">📤 Ya lo entregué</div>
+          <label class="personal-toggle">
+            <input type="checkbox" id="tpb-entregado" ${state.entregado ? 'checked' : ''}
+              onchange="saveTaskPersonalBlock('${cid}',${tid})">
+            <div class="personal-toggle-slider"></div>
+          </label>
+        </div>
+        ${doneTag}
+      </div>
+    </div>`;
+}
+
+async function saveTaskPersonalBlock(cid, tid) {
+  if (!currentUser) return;
+  const hecho     = document.getElementById('tpb-hecho').checked;
+  const entregado = document.getElementById('tpb-entregado').checked;
+  _personalStates[tid] = { hecho, entregado };
+  renderTaskPersonalBlock(cid, tid);
+  try {
+    await savePersonalStateToDb(tid, hecho, entregado);
+  } catch(e) { console.warn('Error guardando', e); }
+}
+function openTask(cid, tid, fromPersonal = false) {
   activeCourseId = cid;
   activeTaskId   = tid;
+  _taskOpenedFromPersonal = fromPersonal;
   const task = tasks[cid].find(t => t.id === tid);
   if (!task) return;
   const c = COURSES.find(x => x.id === cid);
   const d = daysLeft(task.deadline);
+
+  // Botón volver: si viene de personal vuelve al home, sino al curso
+  const backBtn = document.getElementById('task-back-btn');
+  backBtn.onclick = fromPersonal ? () => goBack('home') : () => goBack('course');
+
+  // Bloque personal
+  renderTaskPersonalBlock(cid, tid);
 
   document.getElementById('task-topbar-title').textContent = task.name;
   document.getElementById('task-hero-name').textContent    = task.name;
@@ -2645,7 +2748,7 @@ function renderPersonalSection() {
         } else if (hecho && !entregado) {
           statusBadge = `<span class="personal-done-badge" style="color:#e67700;border-color:#e67700;background:#fff3e0">⚠️ TE FALTA ENTREGARLO</span>`;
         }
-        return `<div class="personal-task-item ${doneClass}" onclick="openPersonalTaskModal('${t.courseId}',${t.id})">
+        return `<div class="personal-task-item ${doneClass}" onclick="openTask('${t.courseId}',${t.id},true)">
           <div class="personal-task-check">${checkContent}</div>
           <div class="personal-task-info">
             <div class="personal-task-name">${catIcon(t.categoria)} ${t.name}</div>
