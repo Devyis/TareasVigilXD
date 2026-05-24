@@ -2202,6 +2202,17 @@ function renderHome() {
     let countClass = '';
     if (taskCount > 0) countClass = 'has-tasks';
     if (hasUrgentTasks) countClass = 'urgent';
+
+    // Calcular chip de la tarea más cercana
+    let closestChip = '';
+    if (ct.length > 0) {
+      const closest = ct.slice().sort((a,b) => new Date(a.deadline) - new Date(b.deadline))[0];
+      const dMin = daysLeft(closest.deadline);
+      if (dMin === 0)      closestChip = `<span style="background:var(--red);color:white;font-size:0.6rem;font-weight:800;padding:0.15rem 0.5rem;border-radius:100px;">🔥 HOY</span>`;
+      else if (dMin === 1) closestChip = `<span style="background:#e67700;color:white;font-size:0.6rem;font-weight:800;padding:0.15rem 0.5rem;border-radius:100px;">⏰ MAÑANA</span>`;
+      else                 closestChip = `<span style="background:var(--accent-light);color:var(--accent);font-size:0.6rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:100px;">📅 ${dMin} días</span>`;
+    }
+
     return `<div class="course-card" onclick="openCourse('${c.id}')">
       <div class="course-card-accent" style="background:${accentColor}"></div>
       <div class="course-card-inner">
@@ -2212,6 +2223,7 @@ function renderHome() {
         </div>
         <div class="course-card-right">
           <span class="task-count-badge ${countClass}">${taskCount}</span>
+          ${closestChip}
           <span class="chevron">›</span>
         </div>
       </div>
