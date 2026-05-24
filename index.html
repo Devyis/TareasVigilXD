@@ -3009,7 +3009,9 @@ function renderPersonalSection() {
       <div class="personal-header">
         <div class="personal-header-left">
           <div class="personal-label">📌 Personal</div>
-          <div class="personal-username" style="display:flex;align-items:center;gap:0.5rem;">
+          <div class="personal-username" style="display:flex;flex-direction:column;align-items:flex-start;gap:0.4rem;">
+            <div style="font-family:'Caveat',cursive;font-size:1.25rem;font-weight:700;color:white;">${currentUser.displayName}</div>
+            <div style="font-size:0.68rem;color:rgba(255,255,255,0.8);margin-bottom:0.3rem;">${faltaMsg}</div>
             <label style="cursor:pointer;position:relative;flex-shrink:0;" title="Cambiar foto de perfil">
               ${currentUser.avatarUrl
                 ? `<img src="${currentUser.avatarUrl}" class="personal-avatar-img">`
@@ -3018,9 +3020,7 @@ function renderPersonalSection() {
               <span class="personal-avatar-cam">📷</span>
               <input type="file" accept="image/*" style="display:none;" onchange="if(this.files[0]) uploadAvatar(this.files[0])">
             </label>
-            ${currentUser.displayName}
           </div>
-          <div class="personal-falta">${faltaMsg}</div>
         </div>
         <button class="personal-logout-btn" onclick="logoutUser()">Salir</button>
       </div>
