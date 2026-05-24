@@ -1967,16 +1967,41 @@ function renderHome() {
           </div>
         </div>`;
     } else {
-      const urgMsg = d === 1 ? '¡Entrega mañana!' : `${total} tarea${total!==1?'s':''} pendiente${total!==1?'s':''}`;
-      bannerContainer.innerHTML = `
-        <div class="home-banner" style="margin:1.2rem 1.2rem 0;height:140px">
-          <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
-          <div class="home-banner-overlay">
-            <div class="home-banner-text">📚 ${urgMsg}</div>
-            <div class="home-banner-text sub">${catIcon(nextTask.categoria)} ${nextTask.name} · ${nextTask.courseIcon} ${nextTask.courseName}</div>
+  // Filtrar tareas que vencen MAÑANA (días = 1)
+  const tomorrowTasks = sorted.filter(t => daysLeft(t.deadline) === 1);
+  
+  if (tomorrowTasks.length > 0) {
+    // Mostrar TODAS las tareas de mañana
+    const itemsHTML = tomorrowTasks.map(t =>
+      `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
+        <span style="font-size:1rem">${catIcon(t.categoria)}</span>
+        <span class="banner-today-item-name">${t.name}</span>
+        <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+      </div>`
+    ).join('');
+    
+    bannerContainer.innerHTML = `
+      <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: linear-gradient(135deg,#e67700,#f59f00);">
+        <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;">
+          <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.5rem">
+            ⏰ ¡Entrega mañana! (${tomorrowTasks.length} tarea${tomorrowTasks.length !== 1 ? 's' : ''})
           </div>
-        </div>`;
-    }
+          <div class="banner-today-list">${itemsHTML}</div>
+        </div>
+      </div>`;
+  } else {
+    // No hay tareas urgentes (ni hoy ni mañana) - mostrar siguiente tarea
+    const urgMsg = `${total} tarea${total !== 1 ? 's' : ''} pendiente${total !== 1 ? 's' : ''}`;
+    bannerContainer.innerHTML = `
+      <div class="home-banner" style="margin:1.2rem 1.2rem 0;height:140px">
+        <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
+        <div class="home-banner-overlay">
+          <div class="home-banner-text">📚 ${urgMsg}</div>
+          <div class="home-banner-text sub">${catIcon(nextTask.categoria)} ${nextTask.name} · ${nextTask.courseIcon} ${nextTask.courseName}</div>
+        </div>
+      </div>`;
+  }
+}
   }
 
   // ── Ticker ──
