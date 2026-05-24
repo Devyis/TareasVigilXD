@@ -1226,6 +1226,242 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   .home-title { font-size: 2rem; }
   .course-card-name { font-size: 1.1rem; }
 }
+
+/* ── PERSONAL SECTION ── */
+.personal-section {
+  margin: 1rem 1.2rem 0;
+  border-radius: 14px;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.personal-header {
+  background: linear-gradient(135deg, #1a1a2e, #3b5bdb);
+  padding: 0.9rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+.personal-header-left { display: flex; flex-direction: column; gap: 0.15rem; }
+.personal-label {
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.65);
+}
+.personal-username {
+  font-family: 'Caveat', cursive;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+.personal-falta {
+  font-size: 0.68rem;
+  color: rgba(255,255,255,0.8);
+  margin-top: 0.1rem;
+}
+.personal-logout-btn {
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  color: white;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.personal-logout-btn:hover { background: rgba(255,255,255,0.28); }
+.personal-body { padding: 0.8rem; }
+.personal-empty {
+  text-align: center;
+  padding: 1.2rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+.personal-task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  margin-bottom: 0.45rem;
+  background: var(--paper2);
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.personal-task-item:last-child { margin-bottom: 0; }
+.personal-task-item:hover { border-color: var(--accent); background: var(--accent-light); }
+.personal-task-item.done {
+  background: var(--green-light);
+  border-color: #b2f2bb;
+  opacity: 0.85;
+}
+.personal-task-check {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--line);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  transition: all 0.2s;
+  background: white;
+}
+.personal-task-item.done .personal-task-check {
+  background: var(--green);
+  border-color: var(--green);
+  color: white;
+}
+.personal-task-info { flex: 1; min-width: 0; }
+.personal-task-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--ink);
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.personal-task-item.done .personal-task-name {
+  text-decoration: line-through;
+  color: var(--green);
+}
+.personal-task-meta {
+  font-size: 0.62rem;
+  color: var(--muted);
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.1rem;
+}
+.personal-task-item.done .personal-task-meta { color: var(--green); opacity: 0.75; }
+.personal-done-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--green);
+  background: white;
+  border: 1.5px solid var(--green);
+  border-radius: 100px;
+  padding: 0.1rem 0.5rem;
+  white-space: nowrap;
+}
+
+/* ── LOGIN PERSONAL ── */
+.personal-login-box {
+  margin: 1rem 1.2rem 0;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem 1.2rem;
+  box-shadow: var(--shadow);
+}
+.personal-login-title {
+  font-family: 'Caveat', cursive;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+  color: var(--ink);
+}
+.personal-login-sub { font-size: 0.7rem; color: var(--muted); margin-bottom: 0.9rem; }
+.personal-login-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.personal-login-input {
+  flex: 1;
+  min-width: 90px;
+  background: var(--paper2);
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  padding: 0.55rem 0.8rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.personal-login-input:focus { border-color: var(--accent); }
+.personal-login-btn {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.personal-login-btn:hover { background: #2f4dcc; }
+.personal-login-err { font-size: 0.68rem; color: var(--red); margin-top: 0.4rem; display: none; }
+.personal-login-err.show { display: block; }
+.personal-login-hint {
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-top: 0.55rem;
+  font-style: italic;
+}
+
+/* MODAL estado personal */
+.personal-modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(26,26,46,0.6);
+  backdrop-filter: blur(6px);
+  z-index: 300;
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; pointer-events: none; transition: opacity 0.22s;
+}
+.personal-modal-overlay.open { opacity: 1; pointer-events: all; }
+.personal-modal-sheet {
+  background: var(--paper);
+  border-radius: 18px 18px 0 0;
+  border: 2px solid var(--line);
+  border-bottom: none;
+  width: 100%; max-width: 600px;
+  padding: 0 1.3rem 2rem;
+  transform: translateY(30px);
+  transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+  max-height: 80vh; overflow-y: auto;
+}
+.personal-modal-overlay.open .personal-modal-sheet { transform: translateY(0); }
+.personal-modal-title {
+  font-family: 'Caveat', cursive;
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+.personal-modal-sub { font-size: 0.72rem; color: var(--muted); margin-bottom: 1rem; }
+.personal-check-row {
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.9rem 0; border-bottom: 1.5px solid var(--line);
+}
+.personal-check-row:last-child { border-bottom: none; }
+.personal-check-label { font-size: 0.85rem; font-weight: 600; color: var(--ink2); flex: 1; }
+.personal-toggle {
+  position: relative; width: 42px; height: 24px; flex-shrink: 0;
+}
+.personal-toggle input { display: none; }
+.personal-toggle-slider {
+  position: absolute; inset: 0;
+  background: var(--line); border-radius: 100px; cursor: pointer;
+  transition: background 0.2s;
+}
+.personal-toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px; height: 18px;
+  left: 3px; top: 3px;
+  background: white; border-radius: 50%;
+  transition: transform 0.2s;
+}
+.personal-toggle input:checked + .personal-toggle-slider { background: var(--green); }
+.personal-toggle input:checked + .personal-toggle-slider::before { transform: translateX(18px); }
 </style>
 </head>
 <body>
@@ -1243,6 +1479,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     <div class="home-stats" id="home-stats"></div>
   </div>
   <div id="home-banner-container"></div>
+  <div id="personal-section-container"></div>
   <div id="ticker-wrap-container"></div>
   <div class="courses-list" id="courses-list"></div>
 </div>
@@ -1399,6 +1636,17 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 </div>
 
 <div id="pill-dropdown-overlay" onclick="closePillDropdown()"></div>
+<div id="personal-task-modal" class="personal-modal-overlay">
+  <div class="personal-modal-sheet">
+    <div class="modal-handle"></div>
+    <div id="ptm-title" class="personal-modal-title"></div>
+    <div id="ptm-sub" class="personal-modal-sub"></div>
+    <div id="ptm-rows"></div>
+    <div class="modal-footer" style="margin-top:1rem">
+      <button class="btn-cancel" onclick="closePersonalModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════
@@ -1725,6 +1973,8 @@ function renderHome() {
       </div>
     </div>`;
   }).join('');
+
+  renderPersonalSection();
 }
 
 function openTaskFromTicker(cid, tid) {
@@ -2218,9 +2468,196 @@ function disableAdmin() {
 }
 
 // ═══════════════════════════════════════════
+// PERSONAL — USUARIOS Y ESTADO (Supabase)
+// ═══════════════════════════════════════════
+const USERS = [
+  { username: 'prueba', password: '1234', displayName: 'Usuario Prueba' },
+  // Agregá más usuarios aquí: { username: 'nombre', password: 'pass', displayName: 'Nombre Completo' }
+];
+
+let currentUser = null;
+let _personalModalCid = null;
+let _personalModalTid = null;
+let _personalStates = {}; // cache local { taskId: { hecho, entregado } }
+
+function loadCurrentUser() {
+  try { currentUser = JSON.parse(localStorage.getItem('personal_user')) || null; } catch(e) { currentUser = null; }
+}
+
+async function loginPersonal() {
+  const u = document.getElementById('personal-login-user').value.trim().toLowerCase();
+  const p = document.getElementById('personal-login-pass').value;
+  const errEl = document.getElementById('personal-login-err');
+  const found = USERS.find(x => x.username === u && x.password === p);
+  if (!found) {
+    errEl.textContent = 'Usuario o contraseña incorrectos ✗';
+    errEl.classList.add('show');
+    document.getElementById('personal-login-pass').value = '';
+    return;
+  }
+  errEl.classList.remove('show');
+  currentUser = found;
+  localStorage.setItem('personal_user', JSON.stringify(found));
+  await loadPersonalStates();
+  renderPersonalSection();
+}
+
+function logoutUser() {
+  currentUser = null;
+  _personalStates = {};
+  localStorage.removeItem('personal_user');
+  renderPersonalSection();
+}
+
+async function loadPersonalStates() {
+  if (!currentUser) return;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/user_task_status?username=eq.${encodeURIComponent(currentUser.username)}&select=task_id,hecho,entregado`,
+      { headers: SB_HEADERS }
+    );
+    if (!res.ok) return;
+    const rows = await res.json();
+    _personalStates = {};
+    rows.forEach(r => { _personalStates[r.task_id] = { hecho: r.hecho, entregado: r.entregado }; });
+  } catch(e) { console.warn('No se pudieron cargar estados personales', e); }
+}
+
+async function savePersonalStateToDb(taskId, hecho, entregado) {
+  await fetch(`${SUPABASE_URL}/rest/v1/user_task_status`, {
+    method: 'POST',
+    headers: { ...SB_HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+    body: JSON.stringify({ username: currentUser.username, task_id: taskId, hecho, entregado }),
+  });
+}
+
+function renderPersonalSection() {
+  const container = document.getElementById('personal-section-container');
+  if (!container) return;
+
+  if (!currentUser) {
+    container.innerHTML = `
+      <div class="personal-login-box">
+        <div class="personal-login-title">👤 Mi sección personal</div>
+        <div class="personal-login-sub">Ingresá para ver tu progreso personalizado. Se guarda en la nube — funciona en cualquier dispositivo.</div>
+        <div class="personal-login-row">
+          <input class="personal-login-input" id="personal-login-user" type="text" placeholder="usuario"
+            onkeydown="if(event.key==='Enter')loginPersonal()">
+          <input class="personal-login-input" id="personal-login-pass" type="password" placeholder="contraseña"
+            onkeydown="if(event.key==='Enter')loginPersonal()">
+          <button class="personal-login-btn" onclick="loginPersonal()">Entrar</button>
+        </div>
+        <div class="personal-login-err" id="personal-login-err"></div>
+        <div class="personal-login-hint">💡 Prueba con: <strong>prueba</strong> / <strong>1234</strong></div>
+      </div>`;
+    return;
+  }
+
+  const allTasks = [];
+  for (const cid in tasks) {
+    (tasks[cid] || []).forEach(t => {
+      const state = _personalStates[t.id] || { hecho: false, entregado: false };
+      const done = state.hecho && state.entregado;
+      const c = COURSES.find(x => x.id === cid);
+      allTasks.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, courseId: cid, color: c ? c.color : '#888', done, state });
+    });
+  }
+
+  const pending = allTasks.filter(t => !t.done);
+  const faltaMsg = pending.length === 0
+    ? '🎉 ¡Todo hecho y entregado!'
+    : `Te faltan <strong>${pending.length}</strong> tarea${pending.length !== 1 ? 's' : ''}`;
+
+  const sorted = [...allTasks].sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+  const itemsHTML = sorted.length === 0
+    ? `<div class="personal-empty">No hay tareas cargadas aún.</div>`
+    : sorted.map(t => {
+        const d = daysLeft(t.deadline);
+        const doneClass = t.done ? 'done' : '';
+        const checkContent = t.done ? '✓' : '';
+        const doneBadge = t.done ? `<span class="personal-done-badge">✅ Ya lo hiciste y entregaste</span>` : '';
+        return `<div class="personal-task-item ${doneClass}" onclick="openPersonalTaskModal('${t.courseId}',${t.id})">
+          <div class="personal-task-check">${checkContent}</div>
+          <div class="personal-task-info">
+            <div class="personal-task-name">${catIcon(t.categoria)} ${t.name}</div>
+            <div class="personal-task-meta">
+              ${t.courseIcon} ${t.courseName} · 📅 ${fmtDate(t.deadline)} · ${daysChip(d)}
+              ${doneBadge}
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+
+  container.innerHTML = `
+    <div class="personal-section">
+      <div class="personal-header">
+        <div class="personal-header-left">
+          <div class="personal-label">📌 Personal</div>
+          <div class="personal-username">👤 ${currentUser.displayName}</div>
+          <div class="personal-falta">${faltaMsg}</div>
+        </div>
+        <button class="personal-logout-btn" onclick="logoutUser()">Salir</button>
+      </div>
+      <div class="personal-body">${itemsHTML}</div>
+    </div>`;
+}
+
+function openPersonalTaskModal(cid, tid) {
+  if (!currentUser) return;
+  _personalModalCid = cid;
+  _personalModalTid = tid;
+  const task = (tasks[cid] || []).find(t => t.id === tid);
+  if (!task) return;
+  const c = COURSES.find(x => x.id === cid);
+  const state = _personalStates[tid] || { hecho: false, entregado: false };
+
+  document.getElementById('ptm-title').textContent = `${catIcon(task.categoria)} ${task.name}`;
+  document.getElementById('ptm-sub').textContent = `${c ? c.icon + ' ' + c.name : cid} · 📅 ${fmtDate(task.deadline)}`;
+  document.getElementById('ptm-rows').innerHTML = `
+    <div class="personal-check-row">
+      <div class="personal-check-label">✅ Ya lo hice</div>
+      <label class="personal-toggle">
+        <input type="checkbox" id="ptm-hecho" ${state.hecho ? 'checked' : ''} onchange="savePersonalState()">
+        <div class="personal-toggle-slider"></div>
+      </label>
+    </div>
+    <div class="personal-check-row">
+      <div class="personal-check-label">📤 Ya lo entregué</div>
+      <label class="personal-toggle">
+        <input type="checkbox" id="ptm-entregado" ${state.entregado ? 'checked' : ''} onchange="savePersonalState()">
+        <div class="personal-toggle-slider"></div>
+      </label>
+    </div>`;
+
+  const modal = document.getElementById('personal-task-modal');
+  modal.addEventListener('click', function handler(e) {
+    if (e.target === modal) { closePersonalModal(); modal.removeEventListener('click', handler); }
+  });
+  requestAnimationFrame(() => modal.classList.add('open'));
+}
+
+function closePersonalModal() {
+  document.getElementById('personal-task-modal').classList.remove('open');
+}
+
+async function savePersonalState() {
+  if (!currentUser || _personalModalTid === null) return;
+  const hecho     = document.getElementById('ptm-hecho').checked;
+  const entregado = document.getElementById('ptm-entregado').checked;
+  _personalStates[_personalModalTid] = { hecho, entregado };
+  renderPersonalSection();
+  try {
+    await savePersonalStateToDb(_personalModalTid, hecho, entregado);
+  } catch(e) { console.warn('Error guardando estado', e); }
+}
+
+// ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
 async function init() {
+  loadCurrentUser();
+
   document.getElementById('courses-list').innerHTML = `
     <div class="empty-state" style="padding:2rem 0">
       <div class="emoji">⏳</div>
@@ -2232,6 +2669,11 @@ async function init() {
     let rows = await dbGetTasks();
     rows = await autoDelete(rows);
     tasks = buildTasksMap(rows);
+
+    if (currentUser) {
+      await loadPersonalStates();
+    }
+
     renderHome();
   } catch(e) {
     document.getElementById('courses-list').innerHTML = `
