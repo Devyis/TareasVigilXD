@@ -2145,12 +2145,18 @@ function renderHome() {
             </div>
           </div>`;
       } else {
+        // Calcular cuántos días hasta la siguiente tarea más cercana
+        const daysToNext = daysLeft(nextTask.deadline);
+        // Agrupar tareas que vencen el mismo día que la más cercana
+        const nextDayTasks = sorted.filter(t => daysLeft(t.deadline) === daysToNext);
+        const tareaWord = nextDayTasks.length === 1 ? 'tarea' : 'tareas';
+        const diasWord  = daysToNext === 1 ? 'día' : 'días';
         bannerHTML = `
           <div class="home-banner" style="margin:1.2rem 1.2rem 0;height:140px">
             <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
             <div class="home-banner-overlay">
-              <div class="home-banner-text">📚 ${urgMsg}</div>
-              <div class="home-banner-text sub">${catIcon(nextTask.categoria)} ${nextTask.name} · ${nextTask.courseIcon} ${nextTask.courseName}</div>
+              <div class="home-banner-text">😎 ¡Estás libre hoy, chaval!</div>
+              <div class="home-banner-text sub">Tenés <strong>${daysToNext}</strong> ${diasWord} hasta ${nextDayTasks.length === 1 ? 'la siguiente tarea' : `las siguientes ${nextDayTasks.length} tareas'`}</div>
             </div>
           </div>`;
       }
