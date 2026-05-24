@@ -1404,7 +1404,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 }
 .personal-task-info { flex: 1; min-width: 0; }
 .personal-task-name {
-  font-size: 0.82rem;
+  font-size: 1rem;
   font-weight: 700;
   color: white;
   transition: all 0.2s;
@@ -1417,7 +1417,7 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   color: #b2f2bb;
 }
 .personal-task-meta {
-  font-size: 0.62rem;
+  font-size: 0.75rem;
   color: rgba(255,255,255,0.65);
   display: flex;
   gap: 0.4rem;
@@ -3049,7 +3049,12 @@ function renderPersonalSection() {
         </div>
         <button class="personal-logout-btn" onclick="logoutUser()">Salir</button>
       </div>
-      <div class="personal-body">${itemsHTML}</div>
+      <div class="personal-body">
+        <div style="font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:#ffd43b;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.4rem;">
+          📋 Pendientes
+        </div>
+        ${itemsHTML}
+      </div>
     </div>`;
 }
 
@@ -3150,3 +3155,4 @@ init();
 </script>
 </body>
 </html>
+  
