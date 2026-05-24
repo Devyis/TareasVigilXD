@@ -2113,8 +2113,10 @@ function renderHome() {
 
   document.getElementById('courses-list').innerHTML = COURSES.map(c => {
     const ct = tasks[c.id] || [];
+    const hasUrgentTasks = ct.length > 0 && Math.min(...ct.map(t => daysLeft(t.deadline))) <= 1;
+    const accentColor = hasUrgentTasks ? 'var(--red)' : c.color;
     return `<div class="course-card" onclick="openCourse('${c.id}')">
-      <div class="course-card-accent" style="background:${c.color}"></div>
+      <div class="course-card-accent" style="background:${accentColor}"></div>
       <div class="course-card-inner">
         <div class="course-icon" style="background:${c.bg}">${c.icon}</div>
         <div class="course-info">
@@ -2122,7 +2124,6 @@ function renderHome() {
           <div class="course-card-sub">${c.id.toUpperCase()}</div>
         </div>
         <div class="course-card-right">
-          ${urgencyBadge(ct)}
           <span class="chevron">›</span>
         </div>
       </div>
