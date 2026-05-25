@@ -711,11 +711,11 @@ body.admin-mode .topbar-action { display: block; }
 .task-count-badge {
   font-size: 0.65rem;
   font-weight: 700;
-  padding: 0.2rem 0.6rem;
+  padding: 0.2rem 0.7rem;
   border-radius: 100px;
   background: var(--paper2);
   color: var(--ink2);
-  min-width: 24px;
+  white-space: nowrap;
   text-align: center;
 }
 .task-count-badge.has-tasks { background: var(--accent-light); color: var(--accent); }
@@ -2551,7 +2551,7 @@ function renderHome() {
           <div class="course-card-sub">${c.id.toUpperCase()}</div>
         </div>
         <div class="course-card-right">
-          <span class="task-count-badge ${countClass}">${taskCount}</span>
+          <span class="task-count-badge ${countClass}">${taskCount === 0 ? 'sin tareas' : `${taskCount} tarea${taskCount !== 1 ? 's' : ''} pendiente${taskCount !== 1 ? 's' : ''}`}</span>
           ${closestChip}
           <span class="chevron">›</span>
         </div>
