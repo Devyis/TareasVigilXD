@@ -1528,6 +1528,35 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     gap: 0.5rem !important;
   }
 }
+/* ── PERSONAL SECTION RESPONSIVE LAYOUT ── */
+.personal-inner-layout {
+  display: flex;
+  flex-direction: column;   /* móvil: foto arriba, pendientes abajo */
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
+}
+.personal-left-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+.personal-right-col {
+  flex: 1;
+  min-width: 0;
+}
+@media (min-width: 600px) {
+  .personal-inner-layout {
+    flex-direction: row;    /* desktop: foto izquierda, pendientes derecha */
+    align-items: flex-start;
+  }
+  .personal-right-col {
+    padding-top: 0.2rem;
+  }
+}
+
 .personal-body {
   padding: 0.8rem;
   background: transparent;
@@ -3345,10 +3374,10 @@ function renderPersonalSection() {
   container.innerHTML = `
     <div class="personal-section">
       <div class="personal-header" style="align-items:flex-start;">
-        <div style="display:flex;gap:1rem;align-items:flex-start;flex:1;min-width:0;">
+        <div class="personal-inner-layout">
 
-          <!-- IZQUIERDA: foto + nombre + falta -->
-          <div style="display:flex;flex-direction:column;align-items:flex-start;gap:0.3rem;flex-shrink:0;">
+          <!-- FOTO + nombre + falta -->
+          <div class="personal-left-col">
             <div class="personal-label">📌 Personal</div>
             <div style="font-family:'Caveat',cursive;font-size:2rem;font-weight:700;color:white;line-height:1.1;">${currentUser.displayName}</div>
             <div style="font-size:1rem;font-weight:600;color:rgba(255,255,255,0.9);margin-bottom:0.2rem;">${faltaMsg}</div>
@@ -3362,8 +3391,8 @@ function renderPersonalSection() {
             </label>
           </div>
 
-          <!-- DERECHA: título pendientes + lista tareas -->
-          <div style="flex:1;min-width:0;padding-top:0.2rem;">
+          <!-- PENDIENTES -->
+          <div class="personal-right-col">
             <div style="font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:#ffd43b;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.4rem;">
               📋 Pendientes
             </div>
