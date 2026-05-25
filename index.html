@@ -2451,11 +2451,15 @@ function renderHome() {
         const tareaWord = nextDayTasks.length === 1 ? 'tarea' : 'tareas';
         const diasWord  = daysToNext === 1 ? 'día' : 'días';
         bannerHTML = `
-          <div class="home-banner" style="margin:1.2rem 1.2rem 0;height:140px">
-            <img src="${BANNER_IMG_URL}" alt="Tareas pendientes">
-            <div class="home-banner-overlay">
-              <div class="home-banner-text">😎 ¡Estás libre hoy, chaval!</div>
-              <div class="home-banner-text sub">Tenés <strong>${daysToNext}</strong> ${diasWord} hasta ${nextDayTasks.length === 1 ? 'la siguiente tarea' : `las siguientes ${nextDayTasks.length} tareas'`}</div>
+          <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: #1a2a4a;">
+            <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;display:flex;align-items:center;gap:1rem;">
+              <div style="flex-shrink:0;width:90px;height:90px;border-radius:12px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.4);">
+                <img src="https://files.catbox.moe/8nb3gn.gif" alt="Libre hoy" style="width:100%;height:100%;object-fit:cover;">
+              </div>
+              <div style="flex:1;min-width:0;">
+                <div class="home-banner-text" style="color:white;text-shadow:none;font-size:1.15rem;">😎 ¡Estás libre hoy, chaval!</div>
+                <div class="home-banner-text sub" style="color:rgba(255,255,255,0.8);margin-top:0.3rem;">Tenés <strong>${daysToNext}</strong> ${diasWord} hasta ${nextDayTasks.length === 1 ? 'la siguiente tarea' : `las siguientes ${nextDayTasks.length} tareas`}</div>
+              </div>
             </div>
           </div>`;
       }
