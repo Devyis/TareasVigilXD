@@ -36,6 +36,177 @@
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
 }
 
+/* ── DARK MODE ── */
+body.dark-mode {
+  --bg: #0f0f1a;
+  --paper: #1a1a2e;
+  --paper2: #16213e;
+  --line: #2d2d4a;
+  --line-blue: #2a3a5c;
+  --ink: #e8e8f0;
+  --ink2: #a0a0c0;
+  --muted: #5a5a7a;
+  --accent: #6c8cff;
+  --accent-light: #1a2040;
+  --red: #ff6b6b;
+  --red-light: #2a1010;
+  --green: #51cf66;
+  --green-light: #0d2010;
+  --orange: #ffa94d;
+  --orange-light: #2a1a00;
+  --yellow: #ffd43b;
+  --purple: #9775fa;
+  --pink: #f783ac;
+  --teal: #22d3ee;
+  --expo: #9775fa;
+  --expo-light: #1a1030;
+  --examen: #ff6b6b;
+  --examen-light: #2a1010;
+  --shadow: 0 2px 12px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+}
+body.dark-mode .personal-login-box { background: #1a1a2e; }
+body.dark-mode .pw-box { background: #1a1a2e; }
+body.dark-mode .modal-sheet { background: #1a1a2e; }
+body.dark-mode .personal-modal-sheet { background: #1a1a2e; }
+body.dark-mode .pill-dropdown { background: #1a1a2e; }
+body.dark-mode .pill-dropdown-header { background: #1a1a2e; }
+body.dark-mode .ticker-wrap { background: linear-gradient(135deg, #0d3a6e, #1a2a7a); }
+body.dark-mode .personal-section { background: linear-gradient(135deg, #0a0a1a, #1a2a6e); }
+body.dark-mode .task-personal-block { background: linear-gradient(135deg, #0a0a1a, #1a2a6e); }
+body.dark-mode .home-banner { border-color: var(--line); }
+body.dark-mode .personal-task-item { border-color: rgba(255,255,255,0.1); }
+body.dark-mode .form-control { background: #16213e; color: var(--ink); border-color: var(--line); }
+body.dark-mode .personal-login-input { background: #16213e; color: var(--ink); }
+body.dark-mode .topbar { background: #1a1a2e; }
+body.dark-mode .home-header { background: #1a1a2e; }
+body.dark-mode .course-hero { background: #1a1a2e; }
+body.dark-mode .task-hero { background: #1a1a2e; }
+
+/* Theme toggle button */
+.theme-toggle {
+  background: none;
+  border: 2px solid var(--line);
+  color: var(--ink2);
+  font-size: 1rem;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+
+/* ── QUICK TASK POPUP ── */
+.qtask-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10,10,26,0.55);
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.qtask-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.qtask-popup {
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+  width: 90%;
+  max-width: 340px;
+  padding: 1.3rem 1.4rem 1.5rem;
+  transform: scale(0.92) translateY(8px);
+  transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
+}
+.qtask-overlay.open .qtask-popup {
+  transform: scale(1) translateY(0);
+}
+.qtask-handle {
+  width: 32px; height: 4px;
+  background: var(--line);
+  border-radius: 2px;
+  margin: 0 auto 1rem;
+}
+.qtask-title {
+  font-family: 'Caveat', cursive;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.2rem;
+  line-height: 1.3;
+}
+.qtask-sub {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-bottom: 1.1rem;
+}
+.qtask-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--paper2);
+  cursor: pointer;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 0.55rem;
+  transition: all 0.18s;
+  text-align: left;
+}
+.qtask-btn:last-child { margin-bottom: 0; }
+.qtask-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.1); }
+.qtask-btn.ver-mas {
+  border-color: var(--accent);
+  background: var(--accent-light);
+  color: var(--accent);
+}
+.qtask-btn.ver-mas:hover { background: var(--accent); color: white; }
+.qtask-btn.done-btn {
+  border-color: var(--green);
+  background: var(--green-light);
+  color: var(--green);
+}
+.qtask-btn.done-btn:hover { background: var(--green); color: white; }
+.qtask-btn-icon { font-size: 1.2rem; flex-shrink: 0; }
+.qtask-btn-text { flex: 1; }
+.qtask-btn-title { font-weight: 800; font-size: 0.85rem; }
+.qtask-btn-sub { font-size: 0.68rem; font-weight: 500; opacity: 0.75; margin-top: 0.05rem; }
+.qtask-cancel {
+  width: 100%;
+  margin-top: 0.6rem;
+  background: none;
+  border: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.72rem;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0.4rem;
+  border-radius: 8px;
+  transition: color 0.15s;
+}
+.qtask-cancel:hover { color: var(--ink2); }
+
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { scroll-behavior: smooth; }
 
@@ -1606,7 +1777,10 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
         <div class="home-title">mis <span>cursos</span> <span class="sticker">📓</span></div>
         <div class="home-date" id="home-date"></div>
       </div>
-      <button class="admin-btn-home" id="admin-btn" onclick="openPwModal()">⚙ admin</button>
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Cambiar modo día/noche">🌙</button>
+        <button class="admin-btn-home" id="admin-btn" onclick="openPwModal()">⚙ admin</button>
+      </div>
     </div>
     <div class="home-stats" id="home-stats"></div>
   </div>
@@ -1768,6 +1942,32 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   </div>
 </div>
 
+<!-- QUICK TASK POPUP (personal section) -->
+<div class="qtask-overlay" id="qtask-overlay" onclick="closeQTaskPopup(event)">
+  <div class="qtask-popup">
+    <div class="qtask-handle"></div>
+    <div class="qtask-title" id="qtask-title"></div>
+    <div class="qtask-sub" id="qtask-sub"></div>
+    <button class="qtask-btn ver-mas" id="qtask-ver-mas">
+      <span class="qtask-btn-icon">📖</span>
+      <div class="qtask-btn-text">
+        <div class="qtask-btn-title">Ver más</div>
+        <div class="qtask-btn-sub">Ver todos los detalles, archivos y descripción</div>
+      </div>
+      <span>›</span>
+    </button>
+    <button class="qtask-btn done-btn" id="qtask-done">
+      <span class="qtask-btn-icon">✅</span>
+      <div class="qtask-btn-text">
+        <div class="qtask-btn-title">¡Ya la hice y entregué!</div>
+        <div class="qtask-btn-sub">Marcar como hecha y entregada</div>
+      </div>
+      <span>›</span>
+    </button>
+    <button class="qtask-cancel" onclick="closeQTaskPopup()">Cancelar</button>
+  </div>
+</div>
+
 <div id="pill-dropdown-overlay" onclick="closePillDropdown()"></div>
 <div id="personal-task-modal" class="personal-modal-overlay">
   <div class="personal-modal-sheet">
@@ -1783,6 +1983,102 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 
 <script>
 // ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// DARK / LIGHT MODE
+// ═══════════════════════════════════════════
+function toggleTheme() {
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  document.getElementById('theme-toggle-btn').textContent = isDark ? '☀️' : '🌙';
+}
+function initTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark') {
+    document.body.classList.add('dark-mode');
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) btn.textContent = '☀️';
+  }
+}
+initTheme();
+
+// ═══════════════════════════════════════════
+// QUICK TASK POPUP
+// ═══════════════════════════════════════════
+let _qtaskCid = null, _qtaskTid = null;
+
+function openQTaskPopup(cid, tid) {
+  if (!currentUser) { openTask(cid, tid, true); return; }
+  _qtaskCid = cid;
+  _qtaskTid = tid;
+
+  const task = (tasks[cid] || []).find(t => t.id === tid);
+  if (!task) return;
+  const c = COURSES.find(x => x.id === cid);
+  const state = _personalStates[tid] || { hecho: false, entregado: false };
+
+  document.getElementById('qtask-title').textContent = `${catIcon(task.categoria)} ${task.name}`;
+  document.getElementById('qtask-sub').textContent = `${c ? c.icon + ' ' + c.name : cid} · 📅 ${fmtDate(task.deadline)}`;
+
+  // Update done button text based on current state
+  const doneBtn = document.getElementById('qtask-done');
+  if (state.hecho && state.entregado) {
+    doneBtn.innerHTML = `
+      <span class="qtask-btn-icon">↩️</span>
+      <div class="qtask-btn-text">
+        <div class="qtask-btn-title">Desmarcar</div>
+        <div class="qtask-btn-sub">Ya estaba marcada como hecha y entregada</div>
+      </div>
+      <span>›</span>`;
+    doneBtn.style.borderColor = 'var(--orange)';
+    doneBtn.style.background = 'var(--orange-light)';
+    doneBtn.style.color = 'var(--orange)';
+  } else {
+    doneBtn.innerHTML = `
+      <span class="qtask-btn-icon">✅</span>
+      <div class="qtask-btn-text">
+        <div class="qtask-btn-title">¡Ya la hice y entregué!</div>
+        <div class="qtask-btn-sub">Marcar como hecha y entregada</div>
+      </div>
+      <span>›</span>`;
+    doneBtn.style.borderColor = '';
+    doneBtn.style.background = '';
+    doneBtn.style.color = '';
+    doneBtn.className = 'qtask-btn done-btn';
+  }
+
+  document.getElementById('qtask-ver-mas').onclick = () => {
+    closeQTaskPopup();
+    openTask(cid, tid, true);
+  };
+  doneBtn.onclick = () => quickMarkDone(cid, tid);
+
+  const overlay = document.getElementById('qtask-overlay');
+  requestAnimationFrame(() => overlay.classList.add('open'));
+}
+
+function closeQTaskPopup(e) {
+  if (e && e.target !== document.getElementById('qtask-overlay')) return;
+  document.getElementById('qtask-overlay').classList.remove('open');
+  _qtaskCid = null;
+  _qtaskTid = null;
+}
+
+async function quickMarkDone(cid, tid) {
+  if (!currentUser) return;
+  const state = _personalStates[tid] || { hecho: false, entregado: false };
+  const alreadyDone = state.hecho && state.entregado;
+  const newHecho     = !alreadyDone;
+  const newEntregado = !alreadyDone;
+
+  _personalStates[tid] = { hecho: newHecho, entregado: newEntregado };
+  document.getElementById('qtask-overlay').classList.remove('open');
+  renderPersonalSection();
+
+  try {
+    await savePersonalStateToDb(tid, newHecho, newEntregado);
+  } catch(e) { console.warn('Error guardando estado rápido', e); }
+}
+
 // CONFIG
 // ═══════════════════════════════════════════
 const ADMIN_PASSWORD = 'admin123';
@@ -3028,7 +3324,7 @@ function renderPersonalSection() {
         } else if (hecho && !entregado) {
           statusBadge = `<span class="personal-done-badge" style="color:#e67700;border-color:#e67700;background:#fff3e0">⚠️ TE FALTA ENTREGARLO</span>`;
         }
-        return `<div class="personal-task-item ${doneClass}" onclick="openTask('${t.courseId}',${t.id},true)">
+        return `<div class="personal-task-item ${doneClass}" onclick="openQTaskPopup('${t.courseId}',${t.id})">
           <div class="personal-task-check">${checkContent}</div>
           <div class="personal-task-info">
             <div class="personal-task-name">${catIcon(t.categoria)} ${t.name}</div>
