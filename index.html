@@ -1993,6 +1993,14 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
       </div>
       <span>›</span>
     </button>
+    <button class="qtask-btn" id="qtask-solo-hice" style="border-color:var(--orange);background:var(--orange-light);color:var(--orange);">
+      <span class="qtask-btn-icon">📝</span>
+      <div class="qtask-btn-text">
+        <div class="qtask-btn-title">Solo lo hice, falta entregar</div>
+        <div class="qtask-btn-sub">Marcar como hecha pero pendiente de entrega</div>
+      </div>
+      <span>›</span>
+    </button>
     <button class="qtask-cancel" onclick="closeQTaskPopup()">Cancelar</button>
   </div>
 </div>
@@ -2075,6 +2083,37 @@ function openQTaskPopup(cid, tid) {
     doneBtn.className = 'qtask-btn done-btn';
   }
 
+  // Botón "solo lo hice"
+  const soloHiceBtn = document.getElementById('qtask-solo-hice');
+  if (state.hecho && state.entregado) {
+    soloHiceBtn.style.display = 'none';
+  } else if (state.hecho && !state.entregado) {
+    soloHiceBtn.style.display = '';
+    soloHiceBtn.innerHTML = `
+      <span class="qtask-btn-icon">↩️</span>
+      <div class="qtask-btn-text">
+        <div class="qtask-btn-title">Desmarcar "lo hice"</div>
+        <div class="qtask-btn-sub">Ya estaba marcada como hecha (sin entregar)</div>
+      </div>
+      <span>›</span>`;
+    soloHiceBtn.style.borderColor = "var(--muted)";
+    soloHiceBtn.style.background = "var(--paper2)";
+    soloHiceBtn.style.color = "var(--ink2)";
+  } else {
+    soloHiceBtn.style.display = '';
+    soloHiceBtn.innerHTML = `
+      <span class="qtask-btn-icon">📝</span>
+      <div class="qtask-btn-text">
+        <div class="qtask-btn-title">Solo lo hice, falta entregar</div>
+        <div class="qtask-btn-sub">Marcar como hecha pero pendiente de entrega</div>
+      </div>
+      <span>›</span>`;
+    soloHiceBtn.style.borderColor = "var(--orange)";
+    soloHiceBtn.style.background = "var(--orange-light)";
+    soloHiceBtn.style.color = "var(--orange)";
+  }
+  soloHiceBtn.onclick = () => quickMarkSoloHice(cid, tid);
+
   document.getElementById('qtask-ver-mas').onclick = () => {
     closeQTaskPopup();
     openTask(cid, tid, true);
@@ -2098,6 +2137,22 @@ async function quickMarkDone(cid, tid) {
   const alreadyDone = state.hecho && state.entregado;
   const newHecho     = !alreadyDone;
   const newEntregado = !alreadyDone;
+
+  _personalStates[tid] = { hecho: newHecho, entregado: newEntregado };
+  document.getElementById('qtask-overlay').classList.remove('open');
+  renderPersonalSection();
+
+  try {
+    await savePersonalStateToDb(tid, newHecho, newEntregado);
+  } catch(e) { console.warn('Error guardando estado rápido', e); }
+}
+
+async function quickMarkSoloHice(cid, tid) {
+  if (!currentUser) return;
+  const state = _personalStates[tid] || { hecho: false, entregado: false };
+  // Toggle: si ya estaba marcado como hecho (sin entregar), desmarcar; si no, marcar solo hecho
+  const newHecho = !state.hecho;
+  const newEntregado = false; // nunca toca entregado
 
   _personalStates[tid] = { hecho: newHecho, entregado: newEntregado };
   document.getElementById('qtask-overlay').classList.remove('open');
@@ -2345,7 +2400,22 @@ function renderHome() {
   // ── Banner ──
   const bannerContainer = document.getElementById('home-banner-container');
   
-  if (allTasks.length === 0) {
+  // Si el usuario está logueado, excluir del banner las tareas ya completadas (hecho + entregado)
+  const bannerTasks = currentUser
+    ? allTasks.filter(t => {
+        const st = _personalStates[t.id] || { hecho: false, entregado: false };
+        return !(st.hecho && st.entregado);
+      })
+    : allTasks;
+
+  if (bannerTasks.length === 0 && allTasks.length > 0 && currentUser) {
+    bannerContainer.innerHTML = `
+      <div class="home-banner no-tasks" style="margin:1.2rem 1.2rem 0">
+        <div class="home-banner-overlay">
+          <div class="home-banner-text">🎉 ¡Todo hecho y entregado!<br>No tenés pendientes para hoy ni mañana</div>
+        </div>
+      </div>`;
+  } else if (bannerTasks.length === 0) {
     bannerContainer.innerHTML = `
       <div class="home-banner no-tasks" style="margin:1.2rem 1.2rem 0">
         <div class="home-banner-overlay">
@@ -2353,7 +2423,7 @@ function renderHome() {
         </div>
       </div>`;
   } else {
-    const sorted = allTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+    const sorted = bannerTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
     const todayTasks = sorted.filter(t => daysLeft(t.deadline) === 0);
     const tomorrowTasks = sorted.filter(t => daysLeft(t.deadline) === 1);
     const nextTask   = sorted[0];
@@ -2499,10 +2569,13 @@ function renderHome() {
 
   // ── Ticker ──
   const ticker = document.getElementById('ticker-wrap-container');
-  if (allTasks.length === 0) {
+  const tickerTasks = currentUser
+    ? allTasks.filter(t => { const st = _personalStates[t.id] || {}; return !(st.hecho && st.entregado); })
+    : allTasks;
+  if (tickerTasks.length === 0) {
     ticker.innerHTML = '';
   } else {
-    const sorted = allTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+    const sorted = tickerTasks.slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
     const items = sorted.map(t => {
       const d = daysLeft(t.deadline);
       const label = d === 0 ? '¡hoy!' : d === 1 ? '1 día' : `${d} días`;
