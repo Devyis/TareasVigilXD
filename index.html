@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mis Cursos</title>
+<link rel="icon" type="image/jpeg" href="https://files.catbox.moe/m27jnp.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -1226,6 +1227,23 @@ body.admin-mode .desc-textarea { display: block; }
 }
 .desc-save-btn:hover { background: #2f4dcc; }
 body.admin-mode .desc-save-btn { display: inline-flex; }
+
+.time-limit-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.15rem 0.55rem;
+  border-radius: 100px;
+  background: #1a1a2e;
+  color: #a9c4ff;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.time-limit-tag.warning { background: #2a1f00; color: #ffd43b; }
+.time-limit-tag.danger  { background: #2a0000; color: #ff6b6b; animation: blink 1.2s infinite; }
+.time-limit-tag.done    { background: #0d2010; color: #b2f2bb; }
 
 /* ── DEADLINE / ENTREGA BLOCK ── */
 .entrega-block {
@@ -2888,6 +2906,7 @@ function renderHome() {
   }).join('');
 
   renderPersonalSection();
+  startCardCountdowns();
 }
 
 function openTaskFromTicker(cid, tid) {
@@ -3016,6 +3035,7 @@ function taskCardHTML(t, cid, c) {
   const cls    = d <= 1 ? 'urgent' : d <= 3 ? 'warn' : '';
   const stripe = d <= 1 ? '#ff6b6b' : d <= 3 ? '#ffb347' : c.color;
   const pdftag = hasPdfs(t) ? '<span class="has-pdf-tag">📎 Archivos</span>' : '';
+  const cdTag  = t.deadline_time ? inlineCountdownHTML(t).replace('<span ', `<span data-tid="${t.id}" data-cid="${cid}" `) : '';
   return `<div class="task-card ${cls}" onclick="openTask('${cid}',${t.id})">
     <div class="task-card-stripe" style="background:${stripe}"></div>
     <div class="task-card-body">
@@ -3026,6 +3046,7 @@ function taskCardHTML(t, cid, c) {
         ${catTagHTML(t.categoria)}
         ${pdftag}
       </div>
+      ${cdTag ? `<div style="margin-top:0.35rem">${cdTag}</div>` : ''}
     </div>
     <div class="task-card-actions">
       <button class="task-edit-btn" onclick="editTask(event,'${cid}',${t.id})">✏️</button>
@@ -3107,6 +3128,7 @@ function openTask(cid, tid, fromPersonal = false) {
     ${daysChip(d)}
     ${catTagHTML(task.categoria)}
     <span style="font-size:0.72rem;color:var(--muted)">${c.icon} ${c.name}</span>
+    ${task.deadline_time ? inlineCountdownHTML(task).replace('<span ', `<span data-tid="${task.id}" data-cid="${cid}" `) : ''}
   `;
 
   const desc = task.description || '';
@@ -3739,6 +3761,7 @@ function renderPersonalSection() {
               ${d === 0 ? '<span style="background:#e03131;color:white;font-weight:800;padding:0.1rem 0.5rem;border-radius:100px;font-size:0.72rem;">🔥 HOY</span>' : d === 1 ? '<span style="background:#e67700;color:white;font-weight:800;padding:0.1rem 0.5rem;border-radius:100px;font-size:0.72rem;">⏰ MAÑANA</span>' : daysChip(d)}
               ${statusBadge}
             </div>
+            ${t.deadline_time ? `<div style="margin-top:0.3rem">${inlineCountdownHTML(t).replace('<span ', `<span data-tid="${t.id}" data-cid="${t.courseId}" `)}</div>` : ''}
           </div>
         </div>`;
       }).join('');
@@ -3837,6 +3860,62 @@ async function savePersonalState() {
   } catch(e) { console.warn('Error guardando estado', e); }
 }
 // ✅ FIN DEL CAMBIO
+
+// ═══════════════════════════════════════════
+// INLINE COUNTDOWN (cards + personal items)
+// ═══════════════════════════════════════════
+function inlineCountdownHTML(task) {
+  if (!task.deadline_time) return '';
+  const [hStr, mStr, ampm] = task.deadline_time.split(':');
+  let hour = parseInt(hStr);
+  const min = parseInt(mStr);
+  if (ampm === 'PM' && hour !== 12) hour += 12;
+  if (ampm === 'AM' && hour === 12) hour = 0;
+  const dp = task.deadline.split('-');
+  const target = new Date(parseInt(dp[0]), parseInt(dp[1])-1, parseInt(dp[2]), hour, min, 0);
+  const diff = target - new Date();
+
+  const displayTime = `${hStr}:${mStr} ${ampm}`;
+
+  if (diff <= 0) {
+    return `<span class="time-limit-tag done">✅ ${displayTime} vencido</span>`;
+  }
+
+  const totalH = diff / 3600000;
+  const cls = totalH < 1 ? 'danger' : totalH < 6 ? 'warning' : '';
+
+  const days  = Math.floor(diff / 86400000);
+  const hours = Math.floor((diff % 86400000) / 3600000);
+  const mins  = Math.floor((diff % 3600000) / 60000);
+  const secs  = Math.floor((diff % 60000) / 1000);
+
+  let remaining = '';
+  if (days > 0)       remaining = `${days}d ${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m`;
+  else if (hours > 0) remaining = `${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m ${String(secs).padStart(2,'0')}s`;
+  else                remaining = `${String(mins).padStart(2,'0')}m ${String(secs).padStart(2,'0')}s`;
+
+  return `<span class="time-limit-tag ${cls}" title="Hora límite: ${displayTime}">⏰ ${displayTime} · ${remaining}</span>`;
+}
+
+// Global interval that refreshes all inline countdown tags every second
+let _cardCountdownInterval = null;
+function startCardCountdowns() {
+  if (_cardCountdownInterval) clearInterval(_cardCountdownInterval);
+  _cardCountdownInterval = setInterval(() => {
+    document.querySelectorAll('.time-limit-tag[data-tid]').forEach(el => {
+      const tid = parseInt(el.dataset.tid);
+      const cid = el.dataset.cid;
+      const taskList = cid ? (tasks[cid] || []) : Object.values(tasks).flat();
+      const task = taskList.find(t => t.id === tid);
+      if (!task || !task.deadline_time) return;
+      const newHTML = inlineCountdownHTML(task).replace('<span ', `<span data-tid="${tid}" data-cid="${cid}" `);
+      const tmp = document.createElement('div');
+      tmp.innerHTML = newHTML;
+      const newEl = tmp.firstChild;
+      if (newEl) el.replaceWith(newEl);
+    });
+  }, 1000);
+}
 
 // ═══════════════════════════════════════════
 // ENTREGA BLOCK
