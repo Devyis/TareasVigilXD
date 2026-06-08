@@ -2026,6 +2026,340 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   align-self: flex-start;
   margin-top: 0.3rem;
 }
+
+/* ── FLASHCARDS ── */
+.fc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, #e03131, #c92a2a);
+  color: white;
+  border: none;
+  border-radius: 100px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 0.35rem 0.9rem;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(224,49,49,0.3);
+}
+.fc-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(224,49,49,0.4); }
+
+/* Flashcard overlay/modal */
+.fc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,26,0.7);
+  backdrop-filter: blur(8px);
+  z-index: 900;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s;
+  overflow-y: auto;
+}
+.fc-overlay.open { opacity: 1; pointer-events: all; }
+
+.fc-panel {
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 18px 18px 0 0;
+  width: 100%;
+  max-width: 600px;
+  margin-top: auto;
+  min-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(40px);
+  transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+}
+.fc-overlay.open .fc-panel { transform: translateY(0); }
+
+.fc-panel-header {
+  padding: 1.2rem 1.3rem 0.9rem;
+  border-bottom: 2px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  position: sticky;
+  top: 0;
+  background: var(--paper);
+  z-index: 2;
+  border-radius: 18px 18px 0 0;
+}
+.fc-panel-title {
+  font-family: 'Caveat', cursive;
+  font-size: 1.4rem;
+  font-weight: 700;
+  flex: 1;
+}
+.fc-close-btn {
+  background: var(--paper2);
+  border: 2px solid var(--line);
+  color: var(--ink2);
+  font-size: 1.1rem;
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+.fc-close-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+/* Password gate */
+.fc-pw-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  padding: 2rem 1.5rem;
+  gap: 1rem;
+  text-align: center;
+}
+.fc-pw-emoji { font-size: 3rem; }
+.fc-pw-title { font-family: 'Caveat', cursive; font-size: 1.6rem; font-weight: 700; }
+.fc-pw-sub { font-size: 0.78rem; color: var(--muted); }
+.fc-pw-row { display: flex; gap: 0.5rem; width: 100%; max-width: 280px; }
+.fc-pw-input {
+  flex: 1;
+  background: var(--paper2); border: 2px solid var(--line); border-radius: 10px;
+  padding: 0.65rem 0.9rem; font-family: 'Nunito', sans-serif; font-size: 0.9rem;
+  color: var(--ink); outline: none; transition: border-color 0.2s;
+}
+.fc-pw-input:focus { border-color: var(--examen); }
+.fc-pw-btn {
+  background: var(--examen); color: white; border: none; border-radius: 10px;
+  font-family: 'Nunito', sans-serif; font-size: 0.85rem; font-weight: 700;
+  padding: 0.65rem 1.1rem; cursor: pointer; transition: background 0.2s; white-space: nowrap;
+}
+.fc-pw-btn:hover { background: #c92a2a; }
+.fc-pw-err { font-size: 0.7rem; color: var(--red); display: none; }
+.fc-pw-err.show { display: block; }
+
+/* Tabs: Study / Manage */
+.fc-tabs {
+  display: flex;
+  border-bottom: 2px solid var(--line);
+  flex-shrink: 0;
+}
+.fc-tab {
+  flex: 1;
+  padding: 0.75rem 0.5rem;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--muted);
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+}
+.fc-tab.active { color: var(--examen); border-bottom-color: var(--examen); }
+.fc-tab:hover:not(.active) { color: var(--ink2); }
+
+/* Tab content */
+.fc-tab-content { display: none; flex: 1; overflow-y: auto; }
+.fc-tab-content.active { display: flex; flex-direction: column; }
+
+/* ── STUDY TAB ── */
+.fc-study-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1.2rem;
+  gap: 1rem;
+}
+.fc-progress-bar-wrap {
+  width: 100%;
+  background: var(--line);
+  border-radius: 100px;
+  height: 5px;
+  overflow: hidden;
+}
+.fc-progress-bar { height: 100%; background: var(--examen); border-radius: 100px; transition: width 0.4s; }
+.fc-counter { font-size: 0.72rem; color: var(--muted); text-align: center; }
+
+/* THE CARD */
+.fc-card-scene {
+  width: 100%;
+  max-width: 380px;
+  height: 220px;
+  perspective: 1000px;
+  cursor: pointer;
+}
+.fc-card-inner {
+  width: 100%; height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.4,0,0.2,1);
+}
+.fc-card-scene.flipped .fc-card-inner { transform: rotateY(180deg); }
+.fc-card-face {
+  position: absolute; inset: 0;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  border: 2px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.2rem;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+}
+.fc-card-front {
+  background: linear-gradient(135deg, var(--examen-light), #fff5f5);
+  border-color: #ffc9c9;
+}
+body.dark-mode .fc-card-front { background: linear-gradient(135deg, #2a1010, #1a0a0a); }
+.fc-card-back {
+  background: linear-gradient(135deg, var(--green-light), #f0fff4);
+  border-color: #b2f2bb;
+  transform: rotateY(180deg);
+}
+body.dark-mode .fc-card-back { background: linear-gradient(135deg, #0d2010, #091a0d); }
+
+.fc-card-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.5;
+  margin-bottom: 0.6rem;
+}
+.fc-card-front .fc-card-label { color: var(--examen); }
+.fc-card-back .fc-card-label { color: var(--green); }
+.fc-card-text {
+  font-family: 'Caveat', cursive;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.fc-card-hint {
+  font-size: 0.62rem;
+  color: var(--muted);
+  margin-top: 0.7rem;
+}
+
+/* Nav buttons */
+.fc-nav { display: flex; gap: 0.6rem; width: 100%; max-width: 380px; justify-content: center; }
+.fc-nav-btn {
+  flex: 1;
+  padding: 0.7rem 0.5rem;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--paper2);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink2);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.fc-nav-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.fc-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.fc-shuffle-btn {
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 2px solid var(--line);
+  background: var(--paper2);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ink2);
+  cursor: pointer;
+  transition: all 0.18s;
+  white-space: nowrap;
+}
+.fc-shuffle-btn:hover { border-color: var(--purple); color: var(--purple); }
+
+/* Empty state study */
+.fc-empty-study {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.7rem; text-align: center; padding: 2rem;
+  color: var(--muted);
+}
+.fc-empty-study .emoji { font-size: 2.5rem; }
+.fc-empty-study p { font-family: 'Caveat', cursive; font-size: 1.1rem; }
+
+/* ── MANAGE TAB ── */
+.fc-manage-wrap { padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: 0.8rem; flex: 1; overflow-y: auto; }
+
+/* CSV Upload section */
+.fc-csv-section {
+  background: var(--paper2);
+  border: 2px dashed var(--line);
+  border-radius: 14px;
+  padding: 1rem;
+}
+.fc-csv-label {
+  font-size: 0.65rem; font-weight: 800; color: var(--ink2);
+  text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem;
+  display: flex; align-items: center; gap: 0.4rem;
+}
+.fc-csv-hint { font-size: 0.68rem; color: var(--muted); margin-bottom: 0.7rem; line-height: 1.5; }
+.fc-csv-hint code {
+  background: var(--paper); border: 1px solid var(--line);
+  padding: 0.1rem 0.4rem; border-radius: 5px; font-size: 0.65rem; color: var(--accent);
+}
+.fc-csv-drop-label {
+  display: flex; align-items: center; gap: 0.6rem;
+  background: var(--accent-light); border: 2px dashed var(--accent);
+  border-radius: 10px; padding: 0.65rem 1rem; cursor: pointer;
+  font-size: 0.75rem; color: var(--accent); font-weight: 700; transition: all 0.2s;
+  margin-bottom: 0.5rem;
+}
+.fc-csv-drop-label:hover { background: var(--accent); color: white; }
+.fc-csv-drop-label input[type="file"] { display: none; }
+.fc-csv-preview {
+  font-size: 0.7rem; color: var(--muted); font-style: italic; margin-bottom: 0.5rem;
+}
+.fc-csv-import-btn {
+  width: 100%; padding: 0.6rem; border-radius: 10px; border: none;
+  background: var(--accent); color: white;
+  font-family: 'Nunito', sans-serif; font-size: 0.78rem; font-weight: 700;
+  cursor: pointer; transition: background 0.2s; display: none;
+}
+.fc-csv-import-btn:hover { background: #2f4dcc; }
+.fc-csv-import-btn.show { display: block; }
+
+/* Clear all button */
+.fc-clear-btn {
+  width: 100%; padding: 0.6rem; border-radius: 10px;
+  border: 2px solid var(--line); background: var(--paper2);
+  font-family: 'Nunito', sans-serif; font-size: 0.72rem; font-weight: 700;
+  color: var(--muted); cursor: pointer; transition: all 0.2s;
+}
+.fc-clear-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+/* Cards list */
+.fc-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.fc-list-item {
+  background: var(--paper); border: 1.5px solid var(--line); border-radius: 10px;
+  padding: 0.7rem 0.9rem; display: flex; align-items: flex-start; gap: 0.7rem;
+}
+.fc-list-item-content { flex: 1; min-width: 0; }
+.fc-list-item-q { font-size: 0.8rem; font-weight: 700; color: var(--ink); line-height: 1.3; }
+.fc-list-item-a { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; line-height: 1.3; }
+.fc-list-delete {
+  background: none; border: none; color: var(--muted); cursor: pointer; font-size: 0.85rem;
+  padding: 0.2rem; border-radius: 6px; transition: all 0.18s; flex-shrink: 0;
+}
+.fc-list-delete:hover { color: var(--red); background: var(--red-light); }
+
+/* Save status */
+.fc-save-status { font-size: 0.68rem; color: var(--green); text-align: center; display: none; }
+.fc-save-status.show { display: block; }
 </style>
 </head>
 <body>
@@ -2271,6 +2605,78 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 </div>
 
 <div id="img-lightbox" class="img-lightbox" onclick="closeLightbox()"><img id="img-lightbox-img" src="" alt=""></div>
+
+<!-- FLASHCARD OVERLAY -->
+<div class="fc-overlay" id="fc-overlay" onclick="fcOverlayClick(event)">
+  <div class="fc-panel" id="fc-panel">
+
+    <!-- Header -->
+    <div class="fc-panel-header">
+      <div class="fc-panel-title" id="fc-panel-title">🧠 Probanding</div>
+      <button class="fc-close-btn" onclick="closeFcPanel()">✕</button>
+    </div>
+
+    <!-- PASSWORD GATE -->
+    <div class="fc-pw-gate" id="fc-pw-gate">
+      <div class="fc-pw-emoji">🔐</div>
+      <div class="fc-pw-title">Acceso a Flashcards</div>
+      <div class="fc-pw-sub">Ingresá la contraseña para entrar al modo estudio.</div>
+      <div class="fc-pw-row">
+        <input class="fc-pw-input" id="fc-pw-input" type="password" placeholder="contraseña"
+          onkeydown="if(event.key==='Enter')checkFcPw()">
+        <button class="fc-pw-btn" onclick="checkFcPw()">Entrar</button>
+      </div>
+      <div class="fc-pw-err" id="fc-pw-err">Contraseña incorrecta ✗</div>
+    </div>
+
+    <!-- MAIN CONTENT (hidden until unlocked) -->
+    <div id="fc-main" style="display:none;flex:1;flex-direction:column;overflow:hidden;">
+
+      <!-- Tabs -->
+      <div class="fc-tabs">
+        <button class="fc-tab active" id="fc-tab-study" onclick="fcSwitchTab('study')">📖 Estudiar</button>
+        <button class="fc-tab" id="fc-tab-manage" onclick="fcSwitchTab('manage')">⚙️ Gestionar</button>
+      </div>
+
+      <!-- STUDY TAB -->
+      <div class="fc-tab-content active" id="fc-content-study">
+        <div class="fc-study-wrap" id="fc-study-wrap">
+          <!-- filled by JS -->
+        </div>
+      </div>
+
+      <!-- MANAGE TAB -->
+      <div class="fc-tab-content" id="fc-content-manage">
+        <div class="fc-manage-wrap">
+
+          <!-- CSV Upload -->
+          <div class="fc-csv-section">
+            <div class="fc-csv-label">📥 Importar desde CSV</div>
+            <div class="fc-csv-hint">
+              El CSV debe tener dos columnas sin encabezado, separadas por coma.<br>
+              Formato: <code>pregunta,respuesta</code> (una por línea). Las comillas son opcionales.
+            </div>
+            <label class="fc-csv-drop-label">
+              📂 Elegir archivo CSV
+              <input type="file" accept=".csv,text/csv" id="fc-csv-input" onchange="fcHandleCsv(this)">
+            </label>
+            <div class="fc-csv-preview" id="fc-csv-preview"></div>
+            <button class="fc-csv-import-btn" id="fc-csv-import-btn" onclick="fcImportCsv()">⬆ Importar flashcards</button>
+          </div>
+
+          <!-- Clear all -->
+          <button class="fc-clear-btn" onclick="fcClearAll()">🗑 Eliminar todas las flashcards de este examen</button>
+
+          <div class="fc-save-status" id="fc-save-status">✓ Guardado en Supabase</div>
+
+          <!-- List -->
+          <div class="fc-list" id="fc-list"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 <div id="pill-dropdown-overlay" onclick="closePillDropdown()"></div>
 <div id="personal-task-modal" class="personal-modal-overlay">
   <div class="personal-modal-sheet">
@@ -2536,6 +2942,7 @@ function buildTasksMap(rows) {
       desc_images: r.desc_images || [],
       pdfs: r.pdfs || { teoria:[], tarea:[], adjuntos:[] },
       categoria: r.categoria || 'tarea',
+      flashcards: r.flashcards || [],
     });
   });
   return map;
@@ -3141,6 +3548,7 @@ function openTask(cid, tid, fromPersonal = false) {
     ${catTagHTML(task.categoria)}
     <span style="font-size:0.72rem;color:var(--muted)">${c.icon} ${c.name}</span>
     ${task.deadline_time ? inlineCountdownHTML(task).replace('<span ', `<span data-tid="${task.id}" data-cid="${cid}" `) : ''}
+    ${task.categoria === 'examen' ? `<button class="fc-btn" onclick="openFcPanel()" style="margin-top:0.4rem">🧠 Probanding</button>` : ''}
   `;
 
   const desc = task.description || '';
@@ -4129,6 +4537,290 @@ async function init() {
         <p>Error al conectar con la base de datos.<br><small>${e.message}</small></p>
       </div>`;
   }
+}
+
+// ═══════════════════════════════════════════
+// FLASHCARDS SYSTEM
+// ═══════════════════════════════════════════
+const FC_PASSWORD   = 'elpepe';
+let _fcUnlocked     = false;
+let _fcCards        = [];   // current task's flashcards (working copy)
+let _fcIndex        = 0;
+let _fcShuffled     = [];
+let _fcParsedCsv    = [];   // pending CSV rows to import
+
+function openFcPanel() {
+  const overlay = document.getElementById('fc-overlay');
+  const task = tasks[activeCourseId] && tasks[activeCourseId].find(t => t.id === activeTaskId);
+  document.getElementById('fc-panel-title').textContent = `🧠 ${task ? task.name : 'Flashcards'}`;
+
+  // Load cards from the current task
+  _fcCards = (task && task.flashcards) ? [...task.flashcards] : [];
+
+  // Reset CSV pending state
+  _fcParsedCsv = [];
+  document.getElementById('fc-csv-preview').textContent = '';
+  document.getElementById('fc-csv-import-btn').classList.remove('show');
+  const csvInput = document.getElementById('fc-csv-input');
+  if (csvInput) csvInput.value = '';
+
+  if (_fcUnlocked) {
+    fcShowMain();
+  } else {
+    document.getElementById('fc-pw-gate').style.display = 'flex';
+    document.getElementById('fc-main').style.display = 'none';
+    document.getElementById('fc-pw-input').value = '';
+    document.getElementById('fc-pw-err').classList.remove('show');
+  }
+  requestAnimationFrame(() => overlay.classList.add('open'));
+  if (_fcUnlocked) {
+    setTimeout(() => document.getElementById('fc-pw-input') && document.getElementById('fc-pw-input').focus(), 50);
+  } else {
+    setTimeout(() => document.getElementById('fc-pw-input').focus(), 300);
+  }
+}
+
+function closeFcPanel() {
+  document.getElementById('fc-overlay').classList.remove('open');
+}
+
+function fcOverlayClick(e) {
+  if (e.target === document.getElementById('fc-overlay')) closeFcPanel();
+}
+
+function checkFcPw() {
+  const val = document.getElementById('fc-pw-input').value;
+  if (val === FC_PASSWORD) {
+    _fcUnlocked = true;
+    document.getElementById('fc-pw-err').classList.remove('show');
+    fcShowMain();
+  } else {
+    document.getElementById('fc-pw-err').classList.add('show');
+    document.getElementById('fc-pw-input').value = '';
+    document.getElementById('fc-pw-input').focus();
+  }
+}
+
+function fcShowMain() {
+  document.getElementById('fc-pw-gate').style.display = 'none';
+  const main = document.getElementById('fc-main');
+  main.style.display = 'flex';
+  fcSwitchTab('study');
+  fcRenderStudy();
+  fcRenderList();
+}
+
+function fcSwitchTab(tab) {
+  document.getElementById('fc-tab-study').classList.toggle('active', tab === 'study');
+  document.getElementById('fc-tab-manage').classList.toggle('active', tab === 'manage');
+  document.getElementById('fc-content-study').classList.toggle('active', tab === 'study');
+  document.getElementById('fc-content-manage').classList.toggle('active', tab === 'manage');
+  if (tab === 'study') fcRenderStudy();
+  if (tab === 'manage') fcRenderList();
+}
+
+// ── STUDY ──
+function fcRenderStudy() {
+  const wrap = document.getElementById('fc-study-wrap');
+  if (!_fcCards.length) {
+    wrap.innerHTML = `
+      <div class="fc-empty-study">
+        <div class="emoji">📭</div>
+        <p>No hay flashcards aún.</p>
+        <p style="font-size:0.72rem;font-family:'Nunito',sans-serif;">Importá un CSV desde la pestaña ⚙️ Gestionar</p>
+      </div>`;
+    return;
+  }
+  if (!_fcShuffled.length || _fcShuffled.length !== _fcCards.length) {
+    _fcShuffled = [..._fcCards];
+    _fcIndex = 0;
+  }
+  const card = _fcShuffled[_fcIndex];
+  const pct = Math.round(((_fcIndex) / _fcShuffled.length) * 100);
+  wrap.innerHTML = `
+    <div class="fc-progress-bar-wrap" style="width:100%;max-width:380px;">
+      <div class="fc-progress-bar" style="width:${pct}%"></div>
+    </div>
+    <div class="fc-counter">${_fcIndex + 1} / ${_fcShuffled.length}</div>
+    <div class="fc-card-scene" id="fc-card-scene" onclick="fcFlip()">
+      <div class="fc-card-inner" id="fc-card-inner">
+        <div class="fc-card-face fc-card-front">
+          <div class="fc-card-label">Pregunta</div>
+          <div class="fc-card-text">${escHtml(card.q)}</div>
+          <div class="fc-card-hint">Tocá para ver la respuesta</div>
+        </div>
+        <div class="fc-card-face fc-card-back">
+          <div class="fc-card-label">Respuesta</div>
+          <div class="fc-card-text">${escHtml(card.a)}</div>
+          <div class="fc-card-hint">Tocá para ver la pregunta</div>
+        </div>
+      </div>
+    </div>
+    <div class="fc-nav">
+      <button class="fc-nav-btn" onclick="fcNav(-1)" ${_fcIndex === 0 ? 'disabled' : ''}>← Anterior</button>
+      <button class="fc-shuffle-btn" onclick="fcShuffle()" title="Barajar">🔀</button>
+      <button class="fc-nav-btn" onclick="fcNav(1)" ${_fcIndex === _fcShuffled.length - 1 ? 'disabled' : ''}>Siguiente →</button>
+    </div>
+  `;
+}
+
+function fcFlip() {
+  const scene = document.getElementById('fc-card-scene');
+  if (scene) scene.classList.toggle('flipped');
+}
+
+function fcNav(dir) {
+  _fcIndex = Math.max(0, Math.min(_fcShuffled.length - 1, _fcIndex + dir));
+  fcRenderStudy();
+}
+
+function fcShuffle() {
+  // Fisher-Yates
+  const arr = [..._fcCards];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  _fcShuffled = arr;
+  _fcIndex = 0;
+  fcRenderStudy();
+}
+
+// ── MANAGE / CSV ──
+function fcHandleCsv(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const text = e.target.result;
+    _fcParsedCsv = fcParseCsv(text);
+    const preview = document.getElementById('fc-csv-preview');
+    const btn = document.getElementById('fc-csv-import-btn');
+    if (!_fcParsedCsv.length) {
+      preview.textContent = '⚠️ No se encontraron filas válidas. Verificá el formato.';
+      btn.classList.remove('show');
+    } else {
+      preview.textContent = `✓ ${_fcParsedCsv.length} flashcard${_fcParsedCsv.length !== 1 ? 's' : ''} detectada${_fcParsedCsv.length !== 1 ? 's' : ''}. Hacé clic en Importar.`;
+      btn.classList.add('show');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function fcParseCsv(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const results = [];
+  for (const line of lines) {
+    // Handle quoted fields (RFC 4180 style)
+    const cols = fcSplitCsvLine(line);
+    if (cols.length >= 2) {
+      const q = cols[0].trim();
+      const a = cols.slice(1).join(',').trim(); // allow commas in answer
+      if (q && a) results.push({ q, a });
+    }
+  }
+  return results;
+}
+
+function fcSplitCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"' && !inQuotes) { inQuotes = true; continue; }
+    if (ch === '"' && inQuotes) {
+      if (line[i+1] === '"') { current += '"'; i++; } // escaped quote
+      else inQuotes = false;
+      continue;
+    }
+    if (ch === ',' && !inQuotes) { result.push(current); current = ''; continue; }
+    current += ch;
+  }
+  result.push(current);
+  return result;
+}
+
+async function fcImportCsv() {
+  if (!_fcParsedCsv.length) return;
+  // Merge: add only new ones (avoid duplicates by question)
+  const existing = new Set(_fcCards.map(c => c.q.trim().toLowerCase()));
+  let added = 0;
+  for (const row of _fcParsedCsv) {
+    if (!existing.has(row.q.trim().toLowerCase())) {
+      _fcCards.push(row);
+      existing.add(row.q.trim().toLowerCase());
+      added++;
+    }
+  }
+  _fcParsedCsv = [];
+  document.getElementById('fc-csv-preview').textContent = `✅ ${added} flashcard${added !== 1 ? 's' : ''} agregada${added !== 1 ? 's' : ''}.`;
+  document.getElementById('fc-csv-import-btn').classList.remove('show');
+  const csvInput = document.getElementById('fc-csv-input');
+  if (csvInput) csvInput.value = '';
+  await fcSaveToDb();
+  fcRenderList();
+  _fcShuffled = [];
+}
+
+function fcRenderList() {
+  const list = document.getElementById('fc-list');
+  if (!_fcCards.length) {
+    list.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.8rem;padding:1rem;font-style:italic;">Aún no hay flashcards.</div>`;
+    return;
+  }
+  list.innerHTML = _fcCards.map((card, i) => `
+    <div class="fc-list-item">
+      <div class="fc-list-item-content">
+        <div class="fc-list-item-q">❓ ${escHtml(card.q)}</div>
+        <div class="fc-list-item-a">💡 ${escHtml(card.a)}</div>
+      </div>
+      <button class="fc-list-delete" onclick="fcDeleteCard(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+async function fcDeleteCard(idx) {
+  _fcCards.splice(idx, 1);
+  _fcShuffled = [];
+  fcRenderList();
+  await fcSaveToDb();
+}
+
+async function fcClearAll() {
+  if (!_fcCards.length) return;
+  if (!confirm(`¿Eliminar las ${_fcCards.length} flashcards de este examen?`)) return;
+  _fcCards = [];
+  _fcShuffled = [];
+  fcRenderList();
+  fcRenderStudy();
+  await fcSaveToDb();
+}
+
+async function fcSaveToDb() {
+  const statusEl = document.getElementById('fc-save-status');
+  try {
+    await dbUpdateTask(activeTaskId, { flashcards: _fcCards });
+    // Update local state
+    const task = tasks[activeCourseId] && tasks[activeCourseId].find(t => t.id === activeTaskId);
+    if (task) task.flashcards = [..._fcCards];
+    statusEl.textContent = '✓ Guardado en Supabase';
+    statusEl.classList.add('show');
+    setTimeout(() => statusEl.classList.remove('show'), 2500);
+  } catch(e) {
+    statusEl.textContent = '✗ Error al guardar: ' + e.message;
+    statusEl.style.color = 'var(--red)';
+    statusEl.classList.add('show');
+    setTimeout(() => { statusEl.classList.remove('show'); statusEl.style.color = ''; }, 3000);
+  }
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 init();
