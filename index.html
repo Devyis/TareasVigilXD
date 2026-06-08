@@ -2709,16 +2709,22 @@ function renderHome() {
       const todayItemsHTML = todayTasks.map(t =>
         `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
           <span style="font-size:1rem">${catIcon(t.categoria)}</span>
-          <span class="banner-today-item-name">${t.name}</span>
-          <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+          <div style="flex:1;min-width:0;">
+            <span class="banner-today-item-name">${t.name}</span>
+            <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+            ${t.deadline_time ? `<div style="margin-top:0.2rem">${inlineCountdownHTML(t).replace('<span ', `<span data-tid="${t.id}" data-cid="${t.courseId}" `)}</div>` : ''}
+          </div>
         </div>`
       ).join('');
       
       const tomorrowItemsHTML = tomorrowTasks.map(t =>
         `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
           <span style="font-size:1rem">${catIcon(t.categoria)}</span>
-          <span class="banner-today-item-name">${t.name}</span>
-          <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+          <div style="flex:1;min-width:0;">
+            <span class="banner-today-item-name">${t.name}</span>
+            <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+            ${t.deadline_time ? `<div style="margin-top:0.2rem">${inlineCountdownHTML(t).replace('<span ', `<span data-tid="${t.id}" data-cid="${t.courseId}" `)}</div>` : ''}
+          </div>
         </div>`
       ).join('');
       
@@ -2757,8 +2763,11 @@ function renderHome() {
       const itemsHTML = todayTasks.map(t =>
         `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
           <span style="font-size:1rem">${catIcon(t.categoria)}</span>
-          <span class="banner-today-item-name">${t.name}</span>
-          <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+          <div style="flex:1;min-width:0;">
+            <span class="banner-today-item-name">${t.name}</span>
+            <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+            ${t.deadline_time ? `<div style="margin-top:0.2rem">${inlineCountdownHTML(t).replace('<span ', `<span data-tid="${t.id}" data-cid="${t.courseId}" `)}</div>` : ''}
+          </div>
         </div>`
       ).join('');
       bannerHTML = `
@@ -2781,8 +2790,11 @@ function renderHome() {
       const itemsHTML = tomorrowTasks.map(t =>
         `<div class="banner-today-item" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
           <span style="font-size:1rem">${catIcon(t.categoria)}</span>
-          <span class="banner-today-item-name">${t.name}</span>
-          <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+          <div style="flex:1;min-width:0;">
+            <span class="banner-today-item-name">${t.name}</span>
+            <span class="banner-today-item-course">${t.courseIcon} ${t.courseName}</span>
+            ${t.deadline_time ? `<div style="margin-top:0.2rem">${inlineCountdownHTML(t).replace('<span ', `<span data-tid="${t.id}" data-cid="${t.courseId}" `)}</div>` : ''}
+          </div>
         </div>`
       ).join('');
       
