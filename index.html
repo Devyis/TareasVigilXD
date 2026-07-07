@@ -964,6 +964,38 @@ body.admin-mode .add-task-btn { display: block; }
 .past-tasks-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 .past-tasks-btn span { color: var(--muted); font-weight: 600; }
 
+.sim-expire-btn {
+  width: 100%;
+  background: var(--orange-light);
+  border: 2px dashed var(--orange);
+  color: var(--orange);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.65rem;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.9rem;
+  display: none;
+}
+.sim-expire-btn:hover { background: var(--orange); color: white; }
+body.admin-mode .sim-expire-btn { display: block; }
+
+.sim-expire-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.sim-expire-item:last-child { border-bottom: none; }
+.sim-expire-item:hover { background: var(--paper2); border-radius: 8px; }
+.sim-expire-item-content { flex: 1; min-width: 0; }
+.sim-expire-item-name { font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.sim-expire-item-meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+
 .past-task-item {
   display: flex;
   align-items: center;
@@ -2687,8 +2719,20 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   </div>
   <div class="tasks-section">
     <button class="past-tasks-btn" id="past-tasks-btn" onclick="openPastTasksModal()">📜 Tareas pasadas <span id="past-tasks-count"></span></button>
+    <button class="sim-expire-btn" id="sim-expire-btn" onclick="openSimExpireModal()">🧪 Simular tarea vencida</button>
     <div id="tasks-list"></div>
     <button class="add-task-btn" onclick="openAddModal()">＋ agregar tarea</button>
+  </div>
+</div>
+
+<!-- SIMULATE EXPIRE MODAL (solo admin) -->
+<div class="modal-overlay" id="sim-expire-modal-overlay" onclick="if(event.target===this) closeSimExpireModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🧪 Simular tarea vencida</div>
+    <div style="font-size:0.75rem;color:var(--muted);margin:-0.3rem 0 0.8rem">Elegí una tarea pendiente para moverla al historial de tareas pasadas (le cambia la fecha a ayer).</div>
+    <div id="sim-expire-list"></div>
+    <button class="qtask-cancel" style="width:100%;margin-top:0.8rem" onclick="closeSimExpireModal()">Cerrar</button>
   </div>
 </div>
 
@@ -3856,6 +3900,58 @@ function openPastTasksModal() {
 
 function closePastTasksModal() {
   document.getElementById('past-tasks-modal-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+// SIMULAR TAREA VENCIDA (solo admin, para testing)
+// ═══════════════════════════════════════════
+function openSimExpireModal() {
+  if (!isAdmin) return;
+  const cid = activeCourseId;
+  const pending = (tasks[cid] || [])
+    .filter(t => daysLeft(t.deadline) >= 0)
+    .slice()
+    .sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
+
+  const list = document.getElementById('sim-expire-list');
+  if (!pending.length) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">📭</div><p>No hay tareas pendientes.</p></div>`;
+  } else {
+    list.innerHTML = pending.map(t => `
+      <div class="sim-expire-item" onclick="simExpireTask('${cid}',${t.id})">
+        <div class="sim-expire-item-content">
+          <div class="sim-expire-item-name">${t.name}</div>
+          <div class="sim-expire-item-meta">📅 ${fmtDate(t.deadline)} ${catTagHTML(t.categoria)}</div>
+        </div>
+        <span class="past-task-item-chevron">🧪</span>
+      </div>
+    `).join('');
+  }
+  document.getElementById('sim-expire-modal-overlay').classList.add('open');
+}
+
+function closeSimExpireModal() {
+  document.getElementById('sim-expire-modal-overlay').classList.remove('open');
+}
+
+async function simExpireTask(cid, tid) {
+  const task = (tasks[cid] || []).find(t => t.id === tid);
+  if (!task) return;
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const y = yesterday.getFullYear();
+  const m = String(yesterday.getMonth() + 1).padStart(2, '0');
+  const d = String(yesterday.getDate()).padStart(2, '0');
+  const newDate = `${y}-${m}-${d}`;
+
+  task.deadline = newDate;
+  closeSimExpireModal();
+  renderCourse(cid);
+  try {
+    await dbUpdateTask(tid, { deadline: newDate });
+  } catch(e) {
+    alert('No se pudo guardar en la base de datos: ' + e.message);
+  }
 }
 
 // ═══════════════════════════════════════════
