@@ -2730,9 +2730,10 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   <div class="modal-sheet">
     <div class="modal-handle"></div>
     <div class="modal-title">🧪 Simular tarea vencida</div>
-    <div style="font-size:0.75rem;color:var(--muted);margin:-0.3rem 0 0.8rem">Elegí una tarea pendiente para moverla al historial de tareas pasadas (le cambia la fecha a ayer).</div>
-    <div id="sim-expire-list"></div>
-    <button class="qtask-cancel" style="width:100%;margin-top:0.8rem" onclick="closeSimExpireModal()">Cerrar</button>
+    <div style="font-size:0.75rem;color:var(--muted);margin:-0.3rem 0 0.8rem">Crea una tarea de prueba con fecha de ayer, para que aparezca directo en el historial.</div>
+    <input type="text" id="sim-expire-name-input" class="form-control" placeholder="Nombre de la tarea" style="width:100%;margin-bottom:0.9rem" onkeydown="if(event.key==='Enter') confirmSimExpire()">
+    <button class="topbar-action" style="width:100%;display:block;text-align:center" onclick="confirmSimExpire()">Crear y vencer</button>
+    <button class="qtask-cancel" style="width:100%;margin-top:0.6rem" onclick="closeSimExpireModal()">Cancelar</button>
   </div>
 </div>
 
@@ -3907,50 +3908,47 @@ function closePastTasksModal() {
 // ═══════════════════════════════════════════
 function openSimExpireModal() {
   if (!isAdmin) return;
-  const cid = activeCourseId;
-  const pending = (tasks[cid] || [])
-    .filter(t => daysLeft(t.deadline) >= 0)
-    .slice()
-    .sort((a,b) => new Date(a.deadline) - new Date(b.deadline));
-
-  const list = document.getElementById('sim-expire-list');
-  if (!pending.length) {
-    list.innerHTML = `<div class="empty-state"><div class="emoji">📭</div><p>No hay tareas pendientes.</p></div>`;
-  } else {
-    list.innerHTML = pending.map(t => `
-      <div class="sim-expire-item" onclick="simExpireTask('${cid}',${t.id})">
-        <div class="sim-expire-item-content">
-          <div class="sim-expire-item-name">${t.name}</div>
-          <div class="sim-expire-item-meta">📅 ${fmtDate(t.deadline)} ${catTagHTML(t.categoria)}</div>
-        </div>
-        <span class="past-task-item-chevron">🧪</span>
-      </div>
-    `).join('');
-  }
+  const input = document.getElementById('sim-expire-name-input');
+  input.value = '';
   document.getElementById('sim-expire-modal-overlay').classList.add('open');
+  setTimeout(() => input.focus(), 200);
 }
 
 function closeSimExpireModal() {
   document.getElementById('sim-expire-modal-overlay').classList.remove('open');
 }
 
-async function simExpireTask(cid, tid) {
-  const task = (tasks[cid] || []).find(t => t.id === tid);
-  if (!task) return;
+async function confirmSimExpire() {
+  const cid = activeCourseId;
+  const input = document.getElementById('sim-expire-name-input');
+  const name = input.value.trim();
+  if (!name) {
+    input.style.borderColor = 'var(--red)';
+    setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    return;
+  }
+
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   const y = yesterday.getFullYear();
   const m = String(yesterday.getMonth() + 1).padStart(2, '0');
   const d = String(yesterday.getDate()).padStart(2, '0');
-  const newDate = `${y}-${m}-${d}`;
+  const deadline = `${y}-${m}-${d}`;
 
-  task.deadline = newDate;
+  const id = Date.now();
+  const newTask = {
+    id, course_id: cid, name, deadline, deadline_time: null,
+    description: '', entrega: '', desc_images: [], pdfs: [], categoria: 'tarea',
+  };
+
   closeSimExpireModal();
-  renderCourse(cid);
   try {
-    await dbUpdateTask(tid, { deadline: newDate });
+    await dbInsertTask(newTask);
+    if (!tasks[cid]) tasks[cid] = [];
+    tasks[cid].push({ id, name, deadline, deadline_time: null, description: '', entrega: '', desc_images: [], pdfs: [], categoria: 'tarea' });
+    renderCourse(cid);
   } catch(e) {
-    alert('No se pudo guardar en la base de datos: ' + e.message);
+    alert('No se pudo crear la tarea: ' + e.message);
   }
 }
 
