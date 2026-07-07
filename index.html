@@ -1768,6 +1768,54 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
 }
 .personal-logout-btn:hover { background: rgba(255,255,255,0.28); }
 
+.personal-expired-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.92);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.35rem 0.75rem;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+.personal-expired-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.5);
+  transform: translateY(-1px);
+}
+.personal-expired-count {
+  background: rgba(0,0,0,0.25);
+  border-radius: 100px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.65rem;
+}
+
+.personal-expired-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.7rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: var(--paper2);
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.personal-expired-item:last-child { margin-bottom: 0; }
+.personal-expired-item:hover { border-color: var(--red); background: var(--red-light); transform: translateY(-1px); }
+.personal-expired-item-icon { font-size: 1.2rem; flex-shrink: 0; }
+.personal-expired-item-info { flex: 1; min-width: 0; }
+.personal-expired-item-name { font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.personal-expired-item-meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+
 .personal-avatar-img {
   width: 80px;
   height: 80px;
@@ -3069,6 +3117,19 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     <div id="ptm-rows"></div>
     <div class="modal-footer" style="margin-top:1rem">
       <button class="btn-cancel" onclick="closePersonalModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: TAREAS VENCIDAS (personal) -->
+<div id="personal-expired-modal" class="personal-modal-overlay" onclick="if(event.target===this) closePersonalExpiredModal()">
+  <div class="personal-modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="personal-modal-title">🗂️ Tareas vencidas</div>
+    <div class="personal-modal-sub">Historial de todas tus tareas que ya pasaron su fecha límite.</div>
+    <div id="personal-expired-list" style="margin-top:0.4rem"></div>
+    <div class="modal-footer" style="margin-top:1rem">
+      <button class="btn-cancel" onclick="closePersonalExpiredModal()">Cerrar</button>
     </div>
   </div>
 </div>
@@ -4617,15 +4678,20 @@ function renderPersonalSection() {
     return;
   }
 
-  const allTasks = [];
+  const allTasksRaw = [];
   for (const cid in tasks) {
     (tasks[cid] || []).forEach(t => {
       const state = _personalStates[t.id] || { hecho: false, entregado: false };
       const done = state.hecho && state.entregado;
       const c = COURSES.find(x => x.id === cid);
-      allTasks.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, courseId: cid, color: c ? c.color : '#888', done, state });
+      allTasksRaw.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, courseId: cid, color: c ? c.color : '#888', done, state });
     });
   }
+
+  // Separar vigentes (se muestran en "Pendientes") de vencidas (van al historial)
+  const allTasks  = allTasksRaw.filter(t => daysLeft(t.deadline) >= 0);
+  const expired   = allTasksRaw.filter(t => daysLeft(t.deadline) < 0);
+  window._personalExpiredTasks = expired; // para el modal de vencidas
 
   const pending = allTasks.filter(t => !t.done);
   const faltaMsg = pending.length === 0
@@ -4686,8 +4752,13 @@ function renderPersonalSection() {
 
           <!-- PENDIENTES -->
           <div class="personal-right-col">
-            <div style="font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:#ffd43b;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.4rem;">
-              📋 Pendientes
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.6rem;">
+              <div style="font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:#ffd43b;display:flex;align-items:center;gap:0.4rem;">
+                📋 Pendientes
+              </div>
+              ${expired.length > 0 ? `<button class="personal-expired-btn" onclick="openPersonalExpiredModal()">
+                <span>🗂️</span> Vencidas <span class="personal-expired-count">${expired.length}</span>
+              </button>` : ''}
             </div>
             <div>${itemsHTML}</div>
           </div>
@@ -4734,6 +4805,47 @@ function openPersonalTaskModal(cid, tid) {
 
 function closePersonalModal() {
   document.getElementById('personal-task-modal').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+// MODAL TAREAS VENCIDAS (sección personal)
+// ═══════════════════════════════════════════
+function openPersonalExpiredModal() {
+  const expired = window._personalExpiredTasks || [];
+  const list = document.getElementById('personal-expired-list');
+
+  if (!expired.length) {
+    list.innerHTML = `<div class="empty-state" style="padding:1.5rem 0"><div class="emoji">📭</div><p>No tenés tareas vencidas.</p></div>`;
+  } else {
+    const sorted = expired.slice().sort((a, b) => new Date(b.deadline) - new Date(a.deadline));
+    list.innerHTML = sorted.map(t => {
+      const d = Math.abs(daysLeft(t.deadline));
+      let statusBadge = '';
+      if (t.done) {
+        statusBadge = `<span class="personal-done-badge">✅ Hecho y entregado</span>`;
+      } else if (t.state && t.state.hecho && !t.state.entregado) {
+        statusBadge = `<span class="personal-done-badge" style="color:#e67700;border-color:#e67700;background:#fff3e0">⚠️ No entregado</span>`;
+      } else {
+        statusBadge = `<span class="personal-done-badge" style="color:var(--red);border-color:var(--red);background:var(--red-light)">✗ No hecho</span>`;
+      }
+      return `<div class="personal-expired-item" onclick="closePersonalExpiredModal();openTask('${t.courseId}',${t.id})">
+        <span class="personal-expired-item-icon">${catIcon(t.categoria)}</span>
+        <div class="personal-expired-item-info">
+          <div class="personal-expired-item-name">${t.name}</div>
+          <div class="personal-expired-item-meta">
+            ${t.courseIcon} ${t.courseName} · 📅 ${fmtDate(t.deadline)} · hace ${d} día${d !== 1 ? 's' : ''}
+            ${statusBadge}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('personal-expired-modal').classList.add('open');
+}
+
+function closePersonalExpiredModal() {
+  document.getElementById('personal-expired-modal').classList.remove('open');
 }
 
 // ✅ CÓDIGO CORREGIDO
