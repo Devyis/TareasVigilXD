@@ -943,6 +943,42 @@ body.admin-mode .task-chevron { display: none; }
 .add-task-btn:hover { background: var(--accent); color: white; }
 body.admin-mode .add-task-btn { display: block; }
 
+.past-tasks-btn {
+  width: 100%;
+  background: var(--paper2);
+  border: 2px solid var(--line);
+  color: var(--ink2);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.75rem;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.past-tasks-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.past-tasks-btn span { color: var(--muted); font-weight: 600; }
+
+.past-task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.past-task-item:last-child { border-bottom: none; }
+.past-task-item:hover { background: var(--paper2); border-radius: 8px; }
+.past-task-item-content { flex: 1; min-width: 0; }
+.past-task-item-name { font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.past-task-item-meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+.past-task-item-chevron { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; }
+
 /* ── TASK DETAIL ── */
 #screen-task { background: var(--bg); }
 
@@ -2650,8 +2686,19 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     <div class="course-hero-sub" id="course-hero-sub"></div>
   </div>
   <div class="tasks-section">
+    <button class="past-tasks-btn" id="past-tasks-btn" onclick="openPastTasksModal()">📜 Tareas pasadas <span id="past-tasks-count"></span></button>
     <div id="tasks-list"></div>
     <button class="add-task-btn" onclick="openAddModal()">＋ agregar tarea</button>
+  </div>
+</div>
+
+<!-- PAST TASKS MODAL -->
+<div class="modal-overlay" id="past-tasks-modal-overlay" onclick="if(event.target===this) closePastTasksModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📜 Tareas pasadas</div>
+    <div id="past-tasks-list" style="margin-top:0.8rem"></div>
+    <button class="qtask-cancel" style="width:100%;margin-top:0.8rem" onclick="closePastTasksModal()">Cerrar</button>
   </div>
 </div>
 
@@ -3707,10 +3754,19 @@ function openCourse(cid) {
 
 function renderCourse(cid) {
   const c  = COURSES.find(x => x.id === cid);
-  const all = (tasks[cid] || []).slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+  const allWithPast = (tasks[cid] || []).slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+  const all  = allWithPast.filter(t => daysLeft(t.deadline) >= 0);
+  const past = allWithPast.filter(t => daysLeft(t.deadline) < 0);
   const tareas = all.filter(t => (t.categoria||'tarea') === 'tarea');
   const expos  = all.filter(t => (t.categoria||'tarea') === 'exposicion');
   const exams  = all.filter(t => (t.categoria||'tarea') === 'examen');
+
+  const pastBtn = document.getElementById('past-tasks-btn');
+  const pastCount = document.getElementById('past-tasks-count');
+  if (pastBtn) {
+    pastBtn.style.display = past.length ? 'flex' : 'none';
+    if (pastCount) pastCount.textContent = `(${past.length})`;
+  }
 
   document.getElementById('course-topbar-title').textContent = c.name;
   document.getElementById('course-hero-name').textContent = c.icon + ' ' + c.name;
@@ -3768,6 +3824,38 @@ function taskCardHTML(t, cid, c) {
     </div>
     <span class="task-chevron">›</span>
   </div>`;
+}
+
+// ═══════════════════════════════════════════
+// PAST TASKS (historial de tareas vencidas)
+// ═══════════════════════════════════════════
+function openPastTasksModal() {
+  const cid = activeCourseId;
+  const c = COURSES.find(x => x.id === cid);
+  const past = (tasks[cid] || [])
+    .filter(t => daysLeft(t.deadline) < 0)
+    .slice()
+    .sort((a,b) => new Date(b.deadline) - new Date(a.deadline));
+
+  const list = document.getElementById('past-tasks-list');
+  if (!past.length) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">📭</div><p>Sin tareas pasadas.</p></div>`;
+  } else {
+    list.innerHTML = past.map(t => `
+      <div class="past-task-item" onclick="closePastTasksModal();openTask('${cid}',${t.id})">
+        <div class="past-task-item-content">
+          <div class="past-task-item-name">${t.name}</div>
+          <div class="past-task-item-meta">📅 ${fmtDate(t.deadline)} ${catTagHTML(t.categoria)}</div>
+        </div>
+        <span class="past-task-item-chevron">›</span>
+      </div>
+    `).join('');
+  }
+  document.getElementById('past-tasks-modal-overlay').classList.add('open');
+}
+
+function closePastTasksModal() {
+  document.getElementById('past-tasks-modal-overlay').classList.remove('open');
 }
 
 // ═══════════════════════════════════════════
