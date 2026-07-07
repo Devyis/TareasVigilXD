@@ -757,60 +757,6 @@ body.admin-mode .topbar-action { display: block; }
   color: var(--muted);
 }
 
-.past-tasks-btn {
-  margin-top: 0.8rem;
-  background: var(--paper2);
-  border: 2px solid var(--line);
-  color: var(--ink2);
-  font-family: 'Nunito', sans-serif;
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 0.55rem 0.9rem;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.18s;
-}
-.past-tasks-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: var(--accent-light);
-}
-
-.past-task-item {
-  background: var(--paper);
-  border: 2px solid var(--line);
-  border-radius: var(--r);
-  padding: 0.9rem 1rem;
-  margin-bottom: 0.7rem;
-  opacity: 0.85;
-}
-.past-task-name {
-  font-weight: 800;
-  font-size: 0.9rem;
-  color: var(--ink);
-  margin-bottom: 0.3rem;
-}
-.past-task-meta {
-  font-size: 0.72rem;
-  color: var(--muted);
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-.past-task-delete {
-  margin-top: 0.6rem;
-  background: none;
-  border: 1px solid var(--red);
-  color: var(--red);
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 0.35rem 0.7rem;
-  border-radius: 8px;
-  cursor: pointer;
-}
-.past-task-delete:hover { background: var(--red); color: white; }
-
 .tasks-section { padding: 1.2rem; }
 
 .section-title {
@@ -2702,22 +2648,10 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   <div class="course-hero">
     <div class="course-hero-name" id="course-hero-name"></div>
     <div class="course-hero-sub" id="course-hero-sub"></div>
-    <button class="past-tasks-btn" onclick="openPastTasks()">📚 Tareas pasadas</button>
   </div>
   <div class="tasks-section">
     <div id="tasks-list"></div>
     <button class="add-task-btn" onclick="openAddModal()">＋ agregar tarea</button>
-  </div>
-</div>
-
-<!-- SCREEN 2b — PAST TASKS (historial) -->
-<div id="screen-past" class="screen">
-  <div class="topbar">
-    <button class="back-btn" onclick="goBack('course')">←</button>
-    <div class="topbar-title" id="past-topbar-title">📚 Tareas pasadas</div>
-  </div>
-  <div class="tasks-section">
-    <div id="past-tasks-list"></div>
   </div>
 </div>
 
@@ -3212,26 +3146,9 @@ const BANNER_GIF_URL = 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.g
 
 // ── API helpers ──────────────────────────────
 async function dbGetTasks() {
-  // Solo tareas activas (no archivadas). "archived=is.null" cubre filas viejas
-  // que todavía no tengan la columna seteada.
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?select=*&or=(archived.is.null,archived.eq.false)`, { headers: SB_HEADERS });
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?select=*`, { headers: SB_HEADERS });
   if (!res.ok) throw new Error('Error cargando tareas');
   return res.json();
-}
-
-async function dbGetArchivedTasks(courseId) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?select=*&course_id=eq.${courseId}&archived=eq.true`, { headers: SB_HEADERS });
-  if (!res.ok) throw new Error('Error cargando historial');
-  return res.json();
-}
-
-async function dbArchiveTask(id) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: { ...SB_HEADERS, 'Prefer': 'return=minimal' },
-    body: JSON.stringify({ archived: true }),
-  });
-  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || 'Error al archivar'); }
 }
 
 async function dbInsertTask(task) {
@@ -3322,14 +3239,14 @@ function buildTasksMap(rows) {
   return map;
 }
 
-async function autoArchive(rows) {
+async function autoDelete(rows) {
   const today = new Date(); today.setHours(0,0,0,0);
-  const toArchive = rows.filter(r => {
+  const toDelete = rows.filter(r => {
     const dl = new Date(r.deadline + 'T00:00:00');
     return Math.floor((today - dl) / 86400000) > 0;
   });
-  for (const r of toArchive) {
-    try { await dbArchiveTask(r.id); } catch(e) {}
+  for (const r of toDelete) {
+    try { await dbDeleteTask(r.id); } catch(e) {}
   }
   return rows.filter(r => {
     const dl = new Date(r.deadline + 'T00:00:00');
@@ -3854,83 +3771,8 @@ function taskCardHTML(t, cid, c) {
 }
 
 // ═══════════════════════════════════════════
-// TAREAS PASADAS (historial / archivadas)
+// RENDER TASK DETAIL
 // ═══════════════════════════════════════════
-async function openPastTasks() {
-  const c = COURSES.find(x => x.id === activeCourseId);
-  document.getElementById('past-topbar-title').textContent = '📚 ' + (c ? c.name : 'Tareas pasadas');
-  showScreen('past', 'forward');
-  const list = document.getElementById('past-tasks-list');
-  list.innerHTML = `<div class="empty-state" style="padding:2rem 0"><div class="emoji">⏳</div><p>Cargando historial...</p></div>`;
-  try {
-    const rows = await dbGetArchivedTasks(activeCourseId);
-    rows.sort((a,b) => new Date(b.deadline) - new Date(a.deadline));
-    renderPastTasks(rows);
-  } catch(e) {
-    list.innerHTML = `<div class="empty-state" style="padding:2rem 0"><div class="emoji">❌</div><p>Error al cargar historial.<br><small>${e.message}</small></p></div>`;
-  }
-}
-
-function renderPastTasks(rows) {
-  const list = document.getElementById('past-tasks-list');
-  if (!rows.length) {
-    list.innerHTML = `<div class="empty-state" style="padding:2rem 0"><div class="emoji">🗂️</div><p>Todavía no hay tareas pasadas.</p></div>`;
-    return;
-  }
-  list.innerHTML = rows.map(r => {
-    const pdfs = r.pdfs || { teoria:[], tarea:[], adjuntos:[] };
-    const pdfCount = (pdfs.teoria||[]).length + (pdfs.tarea||[]).length + (pdfs.adjuntos||[]).length;
-    return `
-    <div class="past-task-item">
-      <div class="past-task-name">${escHtml(r.name)}</div>
-      <div class="past-task-meta">
-        <span>📅 ${fmtDate(r.deadline)}</span>
-        ${catTagHTML(r.categoria)}
-        ${pdfCount ? `<span>📎 ${pdfCount} archivo${pdfCount!==1?'s':''}</span>` : ''}
-      </div>
-      <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.6rem;">
-        ${pdfCount ? `<button class="past-task-delete" style="border-color:var(--orange); color:var(--orange)" onclick="deletePastTaskPdfs('${r.id}')">📎 Borrar solo archivos (libera espacio)</button>` : ''}
-        <button class="past-task-delete" onclick="deletePastTask('${r.id}')">🗑 Eliminar todo definitivamente</button>
-      </div>
-    </div>
-  `;
-  }).join('');
-}
-
-async function deletePastTaskPdfs(id) {
-  if (!confirm('¿Borrar los archivos PDF adjuntos de esta tarea? Se mantiene el registro (nombre, fecha), pero los archivos se eliminan del almacenamiento y no se pueden recuperar.')) return;
-  try {
-    const rows = await dbGetArchivedTasks(activeCourseId);
-    const row = rows.find(r => String(r.id) === String(id));
-    if (!row) return;
-    const pdfs = row.pdfs || { teoria:[], tarea:[], adjuntos:[] };
-    const allPaths = [...(pdfs.teoria||[]), ...(pdfs.tarea||[]), ...(pdfs.adjuntos||[])];
-    for (const path of allPaths) {
-      try {
-        await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
-          method: 'DELETE',
-          headers: { 'Authorization': `Bearer ${SUPABASE_ANON}` },
-        });
-      } catch(e) {}
-    }
-    await dbUpdateTask(id, { pdfs: { teoria:[], tarea:[], adjuntos:[] } });
-    openPastTasks();
-  } catch(e) {
-    alert('Error al borrar archivos: ' + e.message);
-  }
-}
-
-async function deletePastTask(id) {
-  if (!confirm('¿Eliminar esta tarea del historial para siempre? Esto no se puede deshacer.')) return;
-  try {
-    await dbDeleteTask(id);
-    openPastTasks();
-  } catch(e) {
-    alert('Error al eliminar: ' + e.message);
-  }
-}
-
-
 let _taskOpenedFromPersonal = false;
 function renderTaskPersonalBlock(cid, tid) {
   const block = document.getElementById('task-personal-status-block');
@@ -4974,7 +4816,7 @@ async function init() {
 
   try {
     let rows = await dbGetTasks();
-    rows = await autoArchive(rows);
+    rows = await autoDelete(rows);
     tasks = buildTasksMap(rows);
 
     if (currentUser) {
