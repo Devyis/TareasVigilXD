@@ -1051,7 +1051,7 @@ body.admin-mode .sim-expire-btn { display: block; }
   outline: none;
   transition: box-shadow 0.15s, border-color 0.15s;
 }
-.block:focus, .desc-block:focus {
+.block:focus, .desc-block:focus, .entrega-block:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-light, rgba(76,110,245,0.18));
 }
@@ -1344,6 +1344,8 @@ body.admin-mode .desc-save-btn { display: inline-flex; }
   padding: 1rem 1.1rem;
   margin-bottom: 1rem;
   position: relative;
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 body.dark-mode .entrega-block {
   background: linear-gradient(135deg, #2a1f00, #1e1800);
@@ -2856,11 +2858,18 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   <div class="task-blocks">
 
     <!-- Donde entregar -->
-    <div class="entrega-block">
-      <div class="entrega-label">📦 Dónde / Cómo entregar</div>
+    <div class="entrega-block" id="entrega-block" tabindex="0" data-paste-zone="entrega">
+      <div class="entrega-label">📦 Dónde / Cómo entregar <span class="paste-hint">(clic aquí y Ctrl+V para pegar una imagen)</span></div>
       <div class="entrega-text" id="entrega-text">Sin instrucciones de entrega.</div>
       <textarea class="entrega-textarea" id="entrega-textarea" placeholder="Ej: Subir al aula virtual, carpeta Drive, entregar impreso..." rows="3"></textarea>
       <button class="entrega-save-btn" id="entrega-save-btn" onclick="saveEntrega()">💾 Guardar</button>
+      <!-- Imágenes de entrega -->
+      <div class="desc-images" id="entrega-images"></div>
+      <label class="upload-img-label" id="upload-img-label-entrega">
+        🖼 Agregar foto a la entrega
+        <input type="file" accept="image/*" multiple id="input-entrega-img" onchange="uploadEntregaImages(this.files)">
+      </label>
+      <div class="upload-progress" id="prog-entrega-img" style="margin-top:0.4rem"><div class="upload-progress-bar" id="progbar-entrega-img"></div></div>
     </div>
 
     <!-- Descripción -->
@@ -2879,10 +2888,10 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
 
     <!-- PDF/PPTX Teoría -->
-    <div class="block" id="block-teoria" tabindex="0" data-paste-zone="teoria">
+    <div class="block" id="block-teoria">
       <div class="block-header">
         <div class="block-icon" style="background:#e8edff">📘</div>
-        <div class="block-title">Archivos Teoría <span class="paste-hint">(clic aquí y Ctrl+V para pegar)</span></div>
+        <div class="block-title">Archivos Teoría</div>
       </div>
       <div class="block-body">
         <div id="block-teoria-list"></div>
@@ -2899,10 +2908,10 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
 
     <!-- PDF/PPTX Tarea -->
-    <div class="block" id="block-tarea" tabindex="0" data-paste-zone="tarea">
+    <div class="block" id="block-tarea">
       <div class="block-header">
         <div class="block-icon" style="background:#ebfbee">📗</div>
-        <div class="block-title">Archivos Tarea <span class="paste-hint">(clic aquí y Ctrl+V para pegar)</span></div>
+        <div class="block-title">Archivos Tarea</div>
       </div>
       <div class="block-body">
         <div id="block-tarea-list"></div>
@@ -2919,10 +2928,10 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
 
     <!-- Archivos adjuntos -->
-    <div class="block" id="block-adjuntos" tabindex="0" data-paste-zone="adjuntos">
+    <div class="block" id="block-adjuntos">
       <div class="block-header">
         <div class="block-icon" style="background:#fff3e0">📎</div>
-        <div class="block-title">Archivos Adjuntos <span class="paste-hint">(clic aquí y Ctrl+V para pegar)</span></div>
+        <div class="block-title">Archivos Adjuntos</div>
       </div>
       <div class="block-body">
         <div id="block-adjuntos-list"></div>
@@ -3430,7 +3439,7 @@ function buildTasksMap(rows) {
       description: r.description || '',
       entrega: r.entrega || '',
       desc_images: r.desc_images || [],
-      pdfs: r.pdfs || { teoria:[], tarea:[], adjuntos:[] },
+      pdfs: r.pdfs || { teoria:[], tarea:[], adjuntos:[], entrega_img:[] },
       categoria: r.categoria || 'tarea',
       flashcards: r.flashcards || [],
     });
@@ -4238,6 +4247,7 @@ function openTask(cid, tid, fromPersonal = false) {
   entregaBtn.disabled = false;
 
   renderDescImages(task);
+  renderEntregaImages(task);
   renderCountdown(task);
 
   const saveBtn = document.getElementById('desc-save-btn');
@@ -4534,7 +4544,7 @@ async function saveTask() {
         description: '',
         entrega: '',
         desc_images: [],
-        pdfs: { teoria:[], tarea:[], adjuntos:[] },
+        pdfs: { teoria:[], tarea:[], adjuntos:[], entrega_img:[] },
         categoria: selectedCat,
       };
       await dbInsertTask(newTask);
@@ -5217,6 +5227,72 @@ async function deleteDescImage(e, idx) {
   renderDescImages(task);
 }
 
+// Imágenes del bloque "Dónde / Cómo entregar" — se guardan dentro de
+// task.pdfs.entrega_img (mismo campo JSON que ya usan teoria/tarea/adjuntos).
+function renderEntregaImages(task) {
+  const container = document.getElementById('entrega-images');
+  if (!container) return;
+  const imgs = (task.pdfs && task.pdfs.entrega_img) || [];
+  if (!imgs.length) { container.innerHTML = ''; return; }
+  container.innerHTML = imgs.map((path, i) => {
+    const url = publicUrl(path);
+    return `<div class="desc-img-item">
+      <img src="${url}" alt="Imagen ${i+1}" onclick="openLightbox('${url}')">
+      <button class="desc-img-delete" onclick="deleteEntregaImage(event,${i})" title="Eliminar imagen">✕</button>
+    </div>`;
+  }).join('');
+}
+
+async function uploadEntregaImages(files) {
+  if (!files || !files.length) return;
+  const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
+  if (!task.pdfs) task.pdfs = { teoria:[], tarea:[], adjuntos:[], entrega_img:[] };
+  if (!task.pdfs.entrega_img) task.pdfs.entrega_img = [];
+  const prog = document.getElementById('prog-entrega-img');
+  const progbar = document.getElementById('progbar-entrega-img');
+  if (prog) prog.classList.add('show');
+
+  for (let i = 0; i < files.length; i++) {
+    const file = files[i];
+    const ext  = (file.name || 'img').split('.').pop().toLowerCase();
+    const path = `entrega_images/${activeTaskId}/${Date.now()}-${i}.${ext}`;
+    if (progbar) progbar.style.width = `${Math.round(((i) / files.length) * 80)}%`;
+    try {
+      const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${SUPABASE_ANON}`, 'Content-Type': file.type, 'x-upsert': 'true' },
+        body: file,
+      });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || `Error ${res.status}`); }
+      task.pdfs.entrega_img.push(path);
+    } catch(e) {
+      alert('Error subiendo imagen: ' + e.message);
+    }
+  }
+
+  await dbUpdateTask(activeTaskId, { pdfs: task.pdfs }).catch(()=>{});
+  if (progbar) progbar.style.width = '100%';
+  renderEntregaImages(task);
+  const input = document.getElementById('input-entrega-img');
+  if (input) input.value = '';
+  setTimeout(() => { if (prog) prog.classList.remove('show'); if (progbar) progbar.style.width = '0%'; }, 700);
+}
+
+async function deleteEntregaImage(e, idx) {
+  e.stopPropagation();
+  if (!confirm('¿Eliminar esta imagen?')) return;
+  const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
+  const path = task.pdfs.entrega_img[idx];
+  try {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
+      method: 'DELETE', headers: { 'Authorization': `Bearer ${SUPABASE_ANON}` },
+    });
+  } catch(e) {}
+  task.pdfs.entrega_img.splice(idx, 1);
+  await dbUpdateTask(activeTaskId, { pdfs: task.pdfs }).catch(()=>{});
+  renderEntregaImages(task);
+}
+
 function openLightbox(url) {
   document.getElementById('img-lightbox-img').src = url;
   document.getElementById('img-lightbox').classList.add('open');
@@ -5700,8 +5776,8 @@ function escHtml(str) {
 
 // ═══════════════════════════════════════════
 // PEGAR DESDE EL PORTAPAPELES (Ctrl+V)
-// Funciona en: Descripción (solo imágenes) y en los bloques
-// Teoría / Tarea / Adjuntos (imágenes o PDF/PPTX copiados como archivo).
+// Funciona SOLO en: Descripción y Dónde/Cómo entregar (solo imágenes).
+// No aplica a Teoría / Tarea / Adjuntos.
 // ═══════════════════════════════════════════
 let _lastPasteZone = null;
 
@@ -5723,25 +5799,19 @@ function initPasteZones() {
     const items = e.clipboardData && e.clipboardData.items;
     if (!items || !items.length) return;
 
-    // Buscar el primer archivo (imagen o documento) presente en el portapapeles
+    // Buscar la primera imagen presente en el portapapeles
     let file = null;
     for (const item of items) {
-      if (item.kind === 'file') {
+      if (item.kind === 'file' && item.type.startsWith('image/')) {
         const f = item.getAsFile();
         if (f) { file = f; break; }
       }
     }
-    if (!file) return; // el usuario pegó texto normal, no interferir
+    if (!file) return; // no hay imagen en el portapapeles, no interferir (ej: texto normal)
 
-    // Determinar la zona: la última en la que hizo foco/click/hover, si no,
-    // inferir por el tipo de archivo (imagen -> descripción por defecto).
-    let zone = _lastPasteZone;
-    if (!zone) zone = file.type.startsWith('image/') ? 'desc' : 'adjuntos';
-
-    // La descripción solo acepta imágenes
-    if (zone === 'desc' && !file.type.startsWith('image/')) {
-      zone = 'adjuntos';
-    }
+    // Solo actúa si la última zona tocada/enfocada es descripción o entrega
+    const zone = _lastPasteZone;
+    if (zone !== 'desc' && zone !== 'entrega') return;
 
     e.preventDefault();
     flashPasteZone(zone);
@@ -5749,8 +5819,7 @@ function initPasteZones() {
     if (zone === 'desc') {
       await uploadDescImages([file]);
     } else {
-      // teoria / tarea / adjuntos: aceptan imagen, PDF o PPTX
-      await uploadFileBlob(zone, file);
+      await uploadEntregaImages([file]);
     }
   });
 }
