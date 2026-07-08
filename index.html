@@ -1048,6 +1048,27 @@ body.admin-mode .sim-expire-btn { display: block; }
   border-radius: var(--r);
   overflow: hidden;
   box-shadow: var(--shadow);
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.block:focus, .desc-block:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light, rgba(76,110,245,0.18));
+}
+.paste-hint {
+  font-weight: 500;
+  font-size: 0.68rem;
+  color: var(--muted);
+  display: none;
+  margin-top: 0.1rem;
+}
+body.admin-mode .paste-hint { display: inline; margin-left: 0.3rem; }
+.paste-zone-flash {
+  animation: pasteFlash 0.5s ease;
+}
+@keyframes pasteFlash {
+  0%   { box-shadow: 0 0 0 4px rgba(64,192,87,0.35); }
+  100% { box-shadow: none; }
 }
 
 .block-header {
@@ -1244,6 +1265,8 @@ body.admin-mode .delete-pdf-btn { display: inline-flex; }
   padding: 1rem 1.1rem;
   margin-bottom: 1rem;
   position: relative;
+  outline: none;
+  transition: box-shadow 0.15s, border-color 0.15s;
 }
 .desc-label {
   font-size: 0.65rem;
@@ -2841,8 +2864,8 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
 
     <!-- Descripción -->
-    <div class="desc-block">
-      <div class="desc-label">📝 Descripción</div>
+    <div class="desc-block" id="desc-block" tabindex="0" data-paste-zone="desc">
+      <div class="desc-label">📝 Descripción <span class="paste-hint">(clic aquí y Ctrl+V para pegar una imagen)</span></div>
       <div class="desc-text" id="desc-text">Sin descripción.</div>
       <textarea class="desc-textarea" id="desc-textarea" placeholder="Escribí los detalles de la tarea, consignas, links, etc..." rows="4"></textarea>
       <button class="desc-save-btn" id="desc-save-btn" onclick="saveDescription()">💾 Guardar descripción</button>
@@ -2856,10 +2879,10 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
 
     <!-- PDF/PPTX Teoría -->
-    <div class="block">
+    <div class="block" id="block-teoria" tabindex="0" data-paste-zone="teoria">
       <div class="block-header">
         <div class="block-icon" style="background:#e8edff">📘</div>
-        <div class="block-title">Archivos Teoría</div>
+        <div class="block-title">Archivos Teoría <span class="paste-hint">(clic aquí y Ctrl+V para pegar)</span></div>
       </div>
       <div class="block-body">
         <div id="block-teoria-list"></div>
@@ -2876,10 +2899,10 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
 
     <!-- PDF/PPTX Tarea -->
-    <div class="block">
+    <div class="block" id="block-tarea" tabindex="0" data-paste-zone="tarea">
       <div class="block-header">
         <div class="block-icon" style="background:#ebfbee">📗</div>
-        <div class="block-title">Archivos Tarea</div>
+        <div class="block-title">Archivos Tarea <span class="paste-hint">(clic aquí y Ctrl+V para pegar)</span></div>
       </div>
       <div class="block-body">
         <div id="block-tarea-list"></div>
@@ -2896,10 +2919,10 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
 
     <!-- Archivos adjuntos -->
-    <div class="block">
+    <div class="block" id="block-adjuntos" tabindex="0" data-paste-zone="adjuntos">
       <div class="block-header">
         <div class="block-icon" style="background:#fff3e0">📎</div>
-        <div class="block-title">Archivos Adjuntos</div>
+        <div class="block-title">Archivos Adjuntos <span class="paste-hint">(clic aquí y Ctrl+V para pegar)</span></div>
       </div>
       <div class="block-body">
         <div id="block-adjuntos-list"></div>
@@ -4320,21 +4343,31 @@ function getMimeType(file) {
 }
 
 async function uploadFile(type) {
-  const input   = document.getElementById('input-'+type);
+  const input = document.getElementById('input-'+type);
+  const file  = input.files[0];
+  if (!file) return;
+  await uploadFileBlob(type, file);
+  input.value = '';
+  const fname = document.getElementById('fname-'+type);
+  if (fname) fname.textContent = 'Ningún archivo elegido';
+  const btn = document.getElementById('btn-'+type);
+  if (btn) btn.disabled = true;
+}
+
+// Sube un archivo (blob/File) al bloque de tipo `type` (teoria|tarea|adjuntos).
+// Usada tanto por el botón "Subir" como por el pegado con Ctrl+V.
+async function uploadFileBlob(type, file) {
   const btn     = document.getElementById('btn-'+type);
   const prog    = document.getElementById('prog-'+type);
   const progbar = document.getElementById('progbar-'+type);
-  const file    = input.files[0];
-  if (!file) return;
 
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const safeName = (file.name || `pegado-${Date.now()}`).replace(/[^a-zA-Z0-9._-]/g, '_');
   const path = `${activeCourseId}/${activeTaskId}/${type}/${Date.now()}-${safeName}`;
   const mime = getMimeType(file);
 
-  btn.disabled = true;
-  btn.textContent = '⏳ Subiendo...';
-  prog.classList.add('show');
-  progbar.style.width = '30%';
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Subiendo...'; }
+  if (prog) prog.classList.add('show');
+  if (progbar) progbar.style.width = '30%';
 
   try {
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`, {
@@ -4347,7 +4380,7 @@ async function uploadFile(type) {
       body: file,
     });
 
-    progbar.style.width = '70%';
+    if (progbar) progbar.style.width = '70%';
     if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || `Error ${res.status}`); }
 
     const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
@@ -4355,23 +4388,21 @@ async function uploadFile(type) {
     task.pdfs[type].push(path);
 
     await dbUpdateTask(activeTaskId, { pdfs: task.pdfs });
-    progbar.style.width = '100%';
+    if (progbar) progbar.style.width = '100%';
 
     renderFileBlock(type, task);
     renderCourse(activeCourseId);
 
-    input.value = '';
-    document.getElementById('fname-'+type).textContent = 'Ningún archivo elegido';
-    btn.textContent = '⬆ Subir';
-    btn.disabled = true;
-    setTimeout(() => { prog.classList.remove('show'); progbar.style.width = '0%'; }, 800);
+    if (btn) { btn.textContent = '⬆ Subir'; }
+    setTimeout(() => { if (prog) prog.classList.remove('show'); if (progbar) progbar.style.width = '0%'; }, 800);
+    return true;
 
   } catch(e) {
     alert('Error al subir: ' + e.message);
-    btn.disabled = false;
-    btn.textContent = '⬆ Subir';
-    prog.classList.remove('show');
-    progbar.style.width = '0%';
+    if (btn) { btn.disabled = false; btn.textContent = '⬆ Subir'; }
+    if (prog) prog.classList.remove('show');
+    if (progbar) progbar.style.width = '0%';
+    return false;
   }
 }
 
@@ -5666,6 +5697,72 @@ function escHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ═══════════════════════════════════════════
+// PEGAR DESDE EL PORTAPAPELES (Ctrl+V)
+// Funciona en: Descripción (solo imágenes) y en los bloques
+// Teoría / Tarea / Adjuntos (imágenes o PDF/PPTX copiados como archivo).
+// ═══════════════════════════════════════════
+let _lastPasteZone = null;
+
+function initPasteZones() {
+  const zones = document.querySelectorAll('[data-paste-zone]');
+  zones.forEach(z => {
+    z.addEventListener('focus', () => { _lastPasteZone = z.dataset.pasteZone; });
+    z.addEventListener('mouseenter', () => { _lastPasteZone = z.dataset.pasteZone; });
+    z.addEventListener('click', () => { _lastPasteZone = z.dataset.pasteZone; });
+  });
+
+  document.addEventListener('paste', async (e) => {
+    // Solo actuar si estamos viendo el detalle de una tarea y en modo admin
+    const taskScreen = document.getElementById('screen-task');
+    if (!taskScreen || !taskScreen.classList.contains('active')) return;
+    if (!isAdmin) return;
+    if (!activeCourseId || activeTaskId === null || activeTaskId === undefined) return;
+
+    const items = e.clipboardData && e.clipboardData.items;
+    if (!items || !items.length) return;
+
+    // Buscar el primer archivo (imagen o documento) presente en el portapapeles
+    let file = null;
+    for (const item of items) {
+      if (item.kind === 'file') {
+        const f = item.getAsFile();
+        if (f) { file = f; break; }
+      }
+    }
+    if (!file) return; // el usuario pegó texto normal, no interferir
+
+    // Determinar la zona: la última en la que hizo foco/click/hover, si no,
+    // inferir por el tipo de archivo (imagen -> descripción por defecto).
+    let zone = _lastPasteZone;
+    if (!zone) zone = file.type.startsWith('image/') ? 'desc' : 'adjuntos';
+
+    // La descripción solo acepta imágenes
+    if (zone === 'desc' && !file.type.startsWith('image/')) {
+      zone = 'adjuntos';
+    }
+
+    e.preventDefault();
+    flashPasteZone(zone);
+
+    if (zone === 'desc') {
+      await uploadDescImages([file]);
+    } else {
+      // teoria / tarea / adjuntos: aceptan imagen, PDF o PPTX
+      await uploadFileBlob(zone, file);
+    }
+  });
+}
+
+function flashPasteZone(zone) {
+  const el = document.querySelector(`[data-paste-zone="${zone}"]`);
+  if (!el) return;
+  el.classList.add('paste-zone-flash');
+  setTimeout(() => el.classList.remove('paste-zone-flash'), 500);
+}
+
+initPasteZones();
 
 init();
 </script>
