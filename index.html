@@ -943,6 +943,74 @@ body.admin-mode .task-chevron { display: none; }
 .add-task-btn:hover { background: var(--accent); color: white; }
 body.admin-mode .add-task-btn { display: block; }
 
+.past-tasks-btn {
+  width: 100%;
+  background: var(--paper2);
+  border: 2px solid var(--line);
+  color: var(--ink2);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.75rem;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.past-tasks-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.past-tasks-btn span { color: var(--muted); font-weight: 600; }
+
+.sim-expire-btn {
+  width: 100%;
+  background: var(--orange-light);
+  border: 2px dashed var(--orange);
+  color: var(--orange);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.65rem;
+  border-radius: var(--r);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.9rem;
+  display: none;
+}
+.sim-expire-btn:hover { background: var(--orange); color: white; }
+body.admin-mode .sim-expire-btn { display: block; }
+
+.sim-expire-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.sim-expire-item:last-child { border-bottom: none; }
+.sim-expire-item:hover { background: var(--paper2); border-radius: 8px; }
+.sim-expire-item-content { flex: 1; min-width: 0; }
+.sim-expire-item-name { font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.sim-expire-item-meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+
+.past-task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+.past-task-item:last-child { border-bottom: none; }
+.past-task-item:hover { background: var(--paper2); border-radius: 8px; }
+.past-task-item-content { flex: 1; min-width: 0; }
+.past-task-item-name { font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.past-task-item-meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; }
+.past-task-item-chevron { color: var(--muted); font-size: 1.1rem; flex-shrink: 0; }
+
 /* ── TASK DETAIL ── */
 #screen-task { background: var(--bg); }
 
@@ -1699,6 +1767,54 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   transition: all 0.2s;
 }
 .personal-logout-btn:hover { background: rgba(255,255,255,0.28); }
+
+.personal-expired-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(255,255,255,0.12);
+  border: 1.5px solid rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.92);
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 0.35rem 0.75rem;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+.personal-expired-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.5);
+  transform: translateY(-1px);
+}
+.personal-expired-count {
+  background: rgba(0,0,0,0.25);
+  border-radius: 100px;
+  padding: 0.05rem 0.45rem;
+  font-size: 0.65rem;
+}
+
+.personal-expired-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 0.7rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: var(--paper2);
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.personal-expired-item:last-child { margin-bottom: 0; }
+.personal-expired-item:hover { border-color: var(--red); background: var(--red-light); transform: translateY(-1px); }
+.personal-expired-item-icon { font-size: 1.2rem; flex-shrink: 0; }
+.personal-expired-item-info { flex: 1; min-width: 0; }
+.personal-expired-item-name { font-weight: 700; font-size: 0.85rem; color: var(--ink); }
+.personal-expired-item-meta { font-size: 0.7rem; color: var(--muted); margin-top: 0.15rem; display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
 
 .personal-avatar-img {
   width: 80px;
@@ -2627,6 +2743,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
       </div>
       <div style="display:flex;gap:0.5rem;align-items:center;">
         <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Cambiar modo día/noche">🌙</button>
+        <button class="admin-btn-home" id="home-past-tasks-btn" onclick="openHomePastTasksModal()" title="Ver tareas pasadas">🗂️ pasadas</button>
         <button class="admin-btn-home" id="admin-btn" onclick="openPwModal()">⚙ admin</button>
       </div>
     </div>
@@ -2650,8 +2767,54 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     <div class="course-hero-sub" id="course-hero-sub"></div>
   </div>
   <div class="tasks-section">
+    <button class="past-tasks-btn" id="past-tasks-btn" onclick="openPastTasksModal()">📜 Tareas pasadas <span id="past-tasks-count"></span></button>
+    <button class="sim-expire-btn" id="sim-expire-btn" onclick="openSimExpireModal()">🧪 Simular tarea vencida</button>
     <div id="tasks-list"></div>
     <button class="add-task-btn" onclick="openAddModal()">＋ agregar tarea</button>
+  </div>
+</div>
+
+<!-- SIMULATE EXPIRE MODAL (solo admin) -->
+<div class="modal-overlay" id="sim-expire-modal-overlay" onclick="if(event.target===this) closeSimExpireModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🧪 Simular tarea vencida</div>
+    <div style="font-size:0.75rem;color:var(--muted);margin:-0.3rem 0 0.8rem">Crea una tarea de prueba con fecha de ayer, para que aparezca directo en el historial.</div>
+    <input type="text" id="sim-expire-name-input" class="form-control" placeholder="Nombre de la tarea" style="width:100%;margin-bottom:0.9rem" onkeydown="if(event.key==='Enter') confirmSimExpire()">
+    <button class="topbar-action" style="width:100%;display:block;text-align:center" onclick="confirmSimExpire()">Crear y vencer</button>
+    <button class="qtask-cancel" style="width:100%;margin-top:0.6rem" onclick="closeSimExpireModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- PAST TASKS MODAL -->
+<div class="modal-overlay" id="past-tasks-modal-overlay" onclick="if(event.target===this) closePastTasksModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📜 Tareas pasadas</div>
+    <div id="past-tasks-list" style="margin-top:0.8rem"></div>
+    <button class="qtask-cancel" style="width:100%;margin-top:0.8rem" onclick="closePastTasksModal()">Cerrar</button>
+  </div>
+</div>
+
+<!-- HOME PAST TASKS MODAL (menú principal): lista de cursos -> tareas vencidas por curso -->
+<div class="modal-overlay" id="home-past-courses-modal-overlay" onclick="if(event.target===this) closeHomePastTasksModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🗂️ Tareas pasadas</div>
+    <div style="font-size:0.75rem;color:var(--muted);margin:-0.3rem 0 0.8rem">Elegí un curso para ver sus tareas vencidas.</div>
+    <div id="home-past-courses-list" style="margin-top:0.4rem"></div>
+    <button class="qtask-cancel" style="width:100%;margin-top:0.8rem" onclick="closeHomePastTasksModal()">Cerrar</button>
+  </div>
+</div>
+
+<!-- HOME PAST TASKS MODAL: tareas vencidas de un curso -->
+<div class="modal-overlay" id="home-past-course-tasks-modal-overlay" onclick="if(event.target===this) closeHomePastCourseTasksModal()">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <button class="back-btn" style="margin-bottom:0.4rem" onclick="closeHomePastCourseTasksModal()">← cursos</button>
+    <div class="modal-title" id="home-past-course-tasks-title">🗂️ Tareas pasadas</div>
+    <div id="home-past-course-tasks-list" style="margin-top:0.6rem"></div>
+    <button class="qtask-cancel" style="width:100%;margin-top:0.8rem" onclick="closeHomePastCourseTasksModal()">Cerrar</button>
   </div>
 </div>
 
@@ -2981,6 +3144,19 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   </div>
 </div>
 
+<!-- MODAL: TAREAS VENCIDAS (personal) -->
+<div id="personal-expired-modal" class="personal-modal-overlay" onclick="if(event.target===this) closePersonalExpiredModal()">
+  <div class="personal-modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="personal-modal-title">🗂️ Tareas vencidas</div>
+    <div class="personal-modal-sub">Historial de todas tus tareas que ya pasaron su fecha límite.</div>
+    <div id="personal-expired-list" style="margin-top:0.4rem"></div>
+    <div class="modal-footer" style="margin-top:1rem">
+      <button class="btn-cancel" onclick="closePersonalExpiredModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // ═══════════════════════════════════════════
@@ -3239,19 +3415,10 @@ function buildTasksMap(rows) {
   return map;
 }
 
+// Ya NO se borran las tareas vencidas: se conservan para el historial
+// "Ver tareas pasadas" (con sus archivos, descripción, etc. intactos).
 async function autoDelete(rows) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const toDelete = rows.filter(r => {
-    const dl = new Date(r.deadline + 'T00:00:00');
-    return Math.floor((today - dl) / 86400000) > 0;
-  });
-  for (const r of toDelete) {
-    try { await dbDeleteTask(r.id); } catch(e) {}
-  }
-  return rows.filter(r => {
-    const dl = new Date(r.deadline + 'T00:00:00');
-    return Math.floor((today - dl) / 86400000) <= 0;
-  });
+  return rows;
 }
 
 // ═══════════════════════════════════════════
@@ -3260,6 +3427,27 @@ async function autoDelete(rows) {
 function daysLeft(dl) {
   const today = new Date(); today.setHours(0,0,0,0);
   return Math.floor((new Date(dl+'T00:00:00') - today) / 86400000);
+}
+
+// Devuelve true si la tarea ya venció, considerando también la hora límite
+// (deadline_time) cuando está definida. Ej: vence martes con hora 10:00 AM ->
+// a las 10:00:01 AM del martes ya cuenta como vencida, no solo al día siguiente.
+function isTaskExpired(t) {
+  const d = daysLeft(t.deadline);
+  if (d > 0) return false;
+  if (d < 0) return true;
+  // d === 0 (vence hoy): si tiene hora límite, comparar con la hora actual
+  if (t.deadline_time) {
+    const [hStr, mStr, ampm] = t.deadline_time.split(':');
+    let h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10);
+    if (ampm === 'PM' && h !== 12) h += 12;
+    if (ampm === 'AM' && h === 12) h = 0;
+    const limit = new Date(t.deadline + 'T00:00:00');
+    limit.setHours(h, m, 0, 0);
+    return new Date() > limit;
+  }
+  return false;
 }
 
 function daysChip(d) {
@@ -3350,6 +3538,7 @@ function renderHome() {
   const allTasks = [];
   for (const cid in tasks) {
     (tasks[cid] || []).forEach(t => {
+      if (isTaskExpired(t)) return; // las vencidas no cuentan como pendientes, van a "tareas pasadas"
       total++;
       const d = daysLeft(t.deadline);
       if (d <= 1) urgent++;
@@ -3584,7 +3773,7 @@ function renderHome() {
   }
 
   document.getElementById('courses-list').innerHTML = COURSES.map(c => {
-    const ct = tasks[c.id] || [];
+    const ct = (tasks[c.id] || []).filter(t => !isTaskExpired(t));
     const hasUrgentTasks = ct.length > 0 && Math.min(...ct.map(t => daysLeft(t.deadline))) <= 1;
     const accentColor = hasUrgentTasks ? 'var(--red)' : c.color;
     const taskCount = ct.length;
@@ -3707,10 +3896,19 @@ function openCourse(cid) {
 
 function renderCourse(cid) {
   const c  = COURSES.find(x => x.id === cid);
-  const all = (tasks[cid] || []).slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+  const allWithPast = (tasks[cid] || []).slice().sort((a,b) => new Date(a.deadline)-new Date(b.deadline));
+  const all  = allWithPast.filter(t => !isTaskExpired(t));
+  const past = allWithPast.filter(t => isTaskExpired(t));
   const tareas = all.filter(t => (t.categoria||'tarea') === 'tarea');
   const expos  = all.filter(t => (t.categoria||'tarea') === 'exposicion');
   const exams  = all.filter(t => (t.categoria||'tarea') === 'examen');
+
+  const pastBtn = document.getElementById('past-tasks-btn');
+  const pastCount = document.getElementById('past-tasks-count');
+  if (pastBtn) {
+    pastBtn.style.display = past.length ? 'flex' : 'none';
+    if (pastCount) pastCount.textContent = `(${past.length})`;
+  }
 
   document.getElementById('course-topbar-title').textContent = c.name;
   document.getElementById('course-hero-name').textContent = c.icon + ' ' + c.name;
@@ -3768,6 +3966,162 @@ function taskCardHTML(t, cid, c) {
     </div>
     <span class="task-chevron">›</span>
   </div>`;
+}
+
+// ═══════════════════════════════════════════
+// PAST TASKS (historial de tareas vencidas)
+// ═══════════════════════════════════════════
+function openPastTasksModal() {
+  const cid = activeCourseId;
+  const c = COURSES.find(x => x.id === cid);
+  const past = (tasks[cid] || [])
+    .filter(t => isTaskExpired(t))
+    .slice()
+    .sort((a,b) => new Date(b.deadline) - new Date(a.deadline));
+
+  const list = document.getElementById('past-tasks-list');
+  if (!past.length) {
+    list.innerHTML = `<div class="empty-state"><div class="emoji">📭</div><p>Sin tareas pasadas.</p></div>`;
+  } else {
+    list.innerHTML = past.map(t => `
+      <div class="past-task-item" onclick="closePastTasksModal();openTask('${cid}',${t.id})">
+        <div class="past-task-item-content">
+          <div class="past-task-item-name">${t.name}</div>
+          <div class="past-task-item-meta">📅 ${fmtDate(t.deadline)} ${catTagHTML(t.categoria)}</div>
+        </div>
+        <span class="past-task-item-chevron">›</span>
+      </div>
+    `).join('');
+  }
+  document.getElementById('past-tasks-modal-overlay').classList.add('open');
+}
+
+function closePastTasksModal() {
+  document.getElementById('past-tasks-modal-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+// TAREAS PASADAS DESDE EL MENÚ PRINCIPAL (todos los cursos)
+// ═══════════════════════════════════════════
+function openHomePastTasksModal() {
+  const list = document.getElementById('home-past-courses-list');
+  const rows = COURSES.map(c => {
+    const past = (tasks[c.id] || []).filter(t => isTaskExpired(t));
+    return { c, count: past.length };
+  });
+
+  const anyPast = rows.some(r => r.count > 0);
+  if (!anyPast) {
+    list.innerHTML = `<div class="empty-state" style="padding:1.5rem 0"><div class="emoji">📭</div><p>No hay tareas pasadas todavía.</p></div>`;
+  } else {
+    list.innerHTML = rows.map(({ c, count }) => `
+      <div class="past-task-item ${count === 0 ? 'disabled' : ''}"
+           style="${count === 0 ? 'opacity:0.45;cursor:default;' : 'cursor:pointer;'}"
+           onclick="${count > 0 ? `openHomePastCourseTasksModal('${c.id}')` : ''}">
+        <div class="past-task-item-content">
+          <div class="past-task-item-name">${c.icon} ${c.name}</div>
+          <div class="past-task-item-meta">${count === 0 ? 'Sin tareas pasadas' : `${count} tarea${count !== 1 ? 's' : ''} pasada${count !== 1 ? 's' : ''}`}</div>
+        </div>
+        ${count > 0 ? '<span class="past-task-item-chevron">›</span>' : ''}
+      </div>
+    `).join('');
+  }
+  document.getElementById('home-past-courses-modal-overlay').classList.add('open');
+}
+
+function closeHomePastTasksModal() {
+  document.getElementById('home-past-courses-modal-overlay').classList.remove('open');
+}
+
+function openHomePastCourseTasksModal(cid) {
+  const c = COURSES.find(x => x.id === cid);
+  const past = (tasks[cid] || [])
+    .filter(t => isTaskExpired(t))
+    .slice()
+    .sort((a, b) => new Date(b.deadline) - new Date(a.deadline));
+
+  document.getElementById('home-past-course-tasks-title').textContent = `${c ? c.icon + ' ' + c.name : cid} · pasadas`;
+
+  const list = document.getElementById('home-past-course-tasks-list');
+  if (!past.length) {
+    list.innerHTML = `<div class="empty-state" style="padding:1.5rem 0"><div class="emoji">📭</div><p>Sin tareas pasadas en este curso.</p></div>`;
+  } else {
+    list.innerHTML = past.map(t => {
+      const state = _personalStates[t.id] || { hecho: false, entregado: false };
+      let statusBadge = '';
+      if (currentUser) {
+        if (state.hecho && state.entregado) {
+          statusBadge = `<span class="personal-done-badge">✅ Hecho y entregado</span>`;
+        } else if (state.hecho && !state.entregado) {
+          statusBadge = `<span class="personal-done-badge" style="color:#e67700;border-color:#e67700;background:#fff3e0">⚠️ No entregado</span>`;
+        } else {
+          statusBadge = `<span class="personal-done-badge" style="color:var(--red);border-color:var(--red);background:var(--red-light)">✗ No hecho</span>`;
+        }
+      }
+      return `
+      <div class="past-task-item" onclick="closeHomePastCourseTasksModal();closeHomePastTasksModal();openTask('${cid}',${t.id},true)">
+        <div class="past-task-item-content">
+          <div class="past-task-item-name">${catIcon(t.categoria)} ${t.name}</div>
+          <div class="past-task-item-meta">📅 ${fmtDate(t.deadline)}${t.deadline_time ? ' · ' + t.deadline_time.slice(0,5) : ''} ${catTagHTML(t.categoria)} ${statusBadge}</div>
+        </div>
+        <span class="past-task-item-chevron">›</span>
+      </div>`;
+    }).join('');
+  }
+  document.getElementById('home-past-course-tasks-modal-overlay').classList.add('open');
+}
+
+function closeHomePastCourseTasksModal() {
+  document.getElementById('home-past-course-tasks-modal-overlay').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+// SIMULAR TAREA VENCIDA (solo admin, para testing)
+// ═══════════════════════════════════════════
+function openSimExpireModal() {
+  if (!isAdmin) return;
+  const input = document.getElementById('sim-expire-name-input');
+  input.value = '';
+  document.getElementById('sim-expire-modal-overlay').classList.add('open');
+  setTimeout(() => input.focus(), 200);
+}
+
+function closeSimExpireModal() {
+  document.getElementById('sim-expire-modal-overlay').classList.remove('open');
+}
+
+async function confirmSimExpire() {
+  const cid = activeCourseId;
+  const input = document.getElementById('sim-expire-name-input');
+  const name = input.value.trim();
+  if (!name) {
+    input.style.borderColor = 'var(--red)';
+    setTimeout(() => { input.style.borderColor = ''; }, 1500);
+    return;
+  }
+
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const y = yesterday.getFullYear();
+  const m = String(yesterday.getMonth() + 1).padStart(2, '0');
+  const d = String(yesterday.getDate()).padStart(2, '0');
+  const deadline = `${y}-${m}-${d}`;
+
+  const id = Date.now();
+  const newTask = {
+    id, course_id: cid, name, deadline, deadline_time: null,
+    description: '', entrega: '', desc_images: [], pdfs: [], categoria: 'tarea',
+  };
+
+  closeSimExpireModal();
+  try {
+    await dbInsertTask(newTask);
+    if (!tasks[cid]) tasks[cid] = [];
+    tasks[cid].push({ id, name, deadline, deadline_time: null, description: '', entrega: '', desc_images: [], pdfs: [], categoria: 'tarea' });
+    renderCourse(cid);
+  } catch(e) {
+    alert('No se pudo crear la tarea: ' + e.message);
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -4435,15 +4789,20 @@ function renderPersonalSection() {
     return;
   }
 
-  const allTasks = [];
+  const allTasksRaw = [];
   for (const cid in tasks) {
     (tasks[cid] || []).forEach(t => {
       const state = _personalStates[t.id] || { hecho: false, entregado: false };
       const done = state.hecho && state.entregado;
       const c = COURSES.find(x => x.id === cid);
-      allTasks.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, courseId: cid, color: c ? c.color : '#888', done, state });
+      allTasksRaw.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, courseId: cid, color: c ? c.color : '#888', done, state });
     });
   }
+
+  // Separar vigentes (se muestran en "Pendientes") de vencidas (van al historial)
+  const allTasks  = allTasksRaw.filter(t => !isTaskExpired(t));
+  const expired   = allTasksRaw.filter(t => isTaskExpired(t));
+  window._personalExpiredTasks = expired; // para el modal de vencidas
 
   const pending = allTasks.filter(t => !t.done);
   const faltaMsg = pending.length === 0
@@ -4504,8 +4863,13 @@ function renderPersonalSection() {
 
           <!-- PENDIENTES -->
           <div class="personal-right-col">
-            <div style="font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:#ffd43b;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.4rem;">
-              📋 Pendientes
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.6rem;">
+              <div style="font-family:'Caveat',cursive;font-size:1.3rem;font-weight:700;color:#ffd43b;display:flex;align-items:center;gap:0.4rem;">
+                📋 Pendientes
+              </div>
+              ${expired.length > 0 ? `<button class="personal-expired-btn" onclick="openPersonalExpiredModal()">
+                <span>🗂️</span> Vencidas <span class="personal-expired-count">${expired.length}</span>
+              </button>` : ''}
             </div>
             <div>${itemsHTML}</div>
           </div>
@@ -4552,6 +4916,47 @@ function openPersonalTaskModal(cid, tid) {
 
 function closePersonalModal() {
   document.getElementById('personal-task-modal').classList.remove('open');
+}
+
+// ═══════════════════════════════════════════
+// MODAL TAREAS VENCIDAS (sección personal)
+// ═══════════════════════════════════════════
+function openPersonalExpiredModal() {
+  const expired = window._personalExpiredTasks || [];
+  const list = document.getElementById('personal-expired-list');
+
+  if (!expired.length) {
+    list.innerHTML = `<div class="empty-state" style="padding:1.5rem 0"><div class="emoji">📭</div><p>No tenés tareas vencidas.</p></div>`;
+  } else {
+    const sorted = expired.slice().sort((a, b) => new Date(b.deadline) - new Date(a.deadline));
+    list.innerHTML = sorted.map(t => {
+      const d = Math.abs(daysLeft(t.deadline));
+      let statusBadge = '';
+      if (t.done) {
+        statusBadge = `<span class="personal-done-badge">✅ Hecho y entregado</span>`;
+      } else if (t.state && t.state.hecho && !t.state.entregado) {
+        statusBadge = `<span class="personal-done-badge" style="color:#e67700;border-color:#e67700;background:#fff3e0">⚠️ No entregado</span>`;
+      } else {
+        statusBadge = `<span class="personal-done-badge" style="color:var(--red);border-color:var(--red);background:var(--red-light)">✗ No hecho</span>`;
+      }
+      return `<div class="personal-expired-item" onclick="closePersonalExpiredModal();openTask('${t.courseId}',${t.id})">
+        <span class="personal-expired-item-icon">${catIcon(t.categoria)}</span>
+        <div class="personal-expired-item-info">
+          <div class="personal-expired-item-name">${t.name}</div>
+          <div class="personal-expired-item-meta">
+            ${t.courseIcon} ${t.courseName} · 📅 ${fmtDate(t.deadline)} · hace ${d} día${d !== 1 ? 's' : ''}
+            ${statusBadge}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('personal-expired-modal').classList.add('open');
+}
+
+function closePersonalExpiredModal() {
+  document.getElementById('personal-expired-modal').classList.remove('open');
 }
 
 // ✅ CÓDIGO CORREGIDO
