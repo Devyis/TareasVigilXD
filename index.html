@@ -3433,6 +3433,30 @@ let activeTaskId   = null;
 // edit mode
 let editingTaskId  = null; // null = new, else = editing
 
+// Corrige tareas viejas/corruptas donde `pdfs` quedó guardado como array
+// (bug de una herramienta de testing) en vez del objeto esperado
+// { teoria, tarea, adjuntos, entrega_img }. Sin esto, agregar imágenes de
+// entrega (u otros archivos) terminaba pisando el resto del campo pdfs.
+function normalizeTaskPdfs(pdfs) {
+  const base = { teoria: [], tarea: [], adjuntos: [], entrega_img: [] };
+  if (!pdfs || typeof pdfs !== 'object') return base;
+  if (Array.isArray(pdfs)) {
+    // Puede traer sub-propiedades colgadas de un array corrupto; las rescatamos si existen.
+    return {
+      teoria: Array.isArray(pdfs.teoria) ? pdfs.teoria : [],
+      tarea: Array.isArray(pdfs.tarea) ? pdfs.tarea : [],
+      adjuntos: Array.isArray(pdfs.adjuntos) ? pdfs.adjuntos : [],
+      entrega_img: Array.isArray(pdfs.entrega_img) ? pdfs.entrega_img : [],
+    };
+  }
+  return {
+    teoria: Array.isArray(pdfs.teoria) ? pdfs.teoria : [],
+    tarea: Array.isArray(pdfs.tarea) ? pdfs.tarea : [],
+    adjuntos: Array.isArray(pdfs.adjuntos) ? pdfs.adjuntos : [],
+    entrega_img: Array.isArray(pdfs.entrega_img) ? pdfs.entrega_img : [],
+  };
+}
+
 function buildTasksMap(rows) {
   const map = {};
   COURSES.forEach(c => map[c.id] = []);
@@ -3446,7 +3470,7 @@ function buildTasksMap(rows) {
       description: r.description || '',
       entrega: r.entrega || '',
       desc_images: r.desc_images || [],
-      pdfs: r.pdfs || { teoria:[], tarea:[], adjuntos:[], entrega_img:[] },
+      pdfs: normalizeTaskPdfs(r.pdfs),
       categoria: r.categoria || 'tarea',
       flashcards: r.flashcards || [],
     });
@@ -4149,14 +4173,14 @@ async function confirmSimExpire() {
   const id = Date.now();
   const newTask = {
     id, course_id: cid, name, deadline, deadline_time: null,
-    description: '', entrega: '', desc_images: [], pdfs: [], categoria: 'tarea',
+    description: '', entrega: '', desc_images: [], pdfs: { teoria:[], tarea:[], adjuntos:[], entrega_img:[] }, categoria: 'tarea',
   };
 
   closeSimExpireModal();
   try {
     await dbInsertTask(newTask);
     if (!tasks[cid]) tasks[cid] = [];
-    tasks[cid].push({ id, name, deadline, deadline_time: null, description: '', entrega: '', desc_images: [], pdfs: [], categoria: 'tarea' });
+    tasks[cid].push({ id, name, deadline, deadline_time: null, description: '', entrega: '', desc_images: [], pdfs: { teoria:[], tarea:[], adjuntos:[], entrega_img:[] }, categoria: 'tarea' });
     renderCourse(cid);
   } catch(e) {
     alert('No se pudo crear la tarea: ' + e.message);
@@ -4401,7 +4425,7 @@ async function uploadFileBlob(type, file) {
     if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.message || `Error ${res.status}`); }
 
     const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
-    if (!task.pdfs[type]) task.pdfs[type] = [];
+    task.pdfs = normalizeTaskPdfs(task.pdfs);
     task.pdfs[type].push(path);
 
     await dbUpdateTask(activeTaskId, { pdfs: task.pdfs });
@@ -5255,8 +5279,7 @@ async function uploadEntregaImages(files) {
   if (!files || !files.length) return;
   const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
   if (!task) { console.error('uploadEntregaImages: no se encontró la tarea activa', activeCourseId, activeTaskId); return; }
-  if (!task.pdfs || typeof task.pdfs !== 'object') task.pdfs = { teoria:[], tarea:[], adjuntos:[], entrega_img:[] };
-  if (!Array.isArray(task.pdfs.entrega_img)) task.pdfs.entrega_img = [];
+  task.pdfs = normalizeTaskPdfs(task.pdfs);
   const prog = document.getElementById('prog-entrega-img');
   const progbar = document.getElementById('progbar-entrega-img');
   if (prog) prog.classList.add('show');
