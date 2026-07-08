@@ -5789,12 +5789,20 @@ function escHtml(str) {
 let _lastPasteZone = null;
 
 function initPasteZones() {
-  const zones = document.querySelectorAll('[data-paste-zone]');
-  zones.forEach(z => {
-    z.addEventListener('focus', () => { _lastPasteZone = z.dataset.pasteZone; });
-    z.addEventListener('mouseenter', () => { _lastPasteZone = z.dataset.pasteZone; });
-    z.addEventListener('click', () => { _lastPasteZone = z.dataset.pasteZone; });
+  // Delegación en el document (con captura) para que funcione sin importar
+  // si el foco/click ocurre en el propio bloque o en un hijo (textarea, etc).
+  document.addEventListener('focusin', (e) => {
+    const zoneEl = e.target.closest && e.target.closest('[data-paste-zone]');
+    if (zoneEl) _lastPasteZone = zoneEl.dataset.pasteZone;
   });
+  document.addEventListener('click', (e) => {
+    const zoneEl = e.target.closest && e.target.closest('[data-paste-zone]');
+    if (zoneEl) _lastPasteZone = zoneEl.dataset.pasteZone;
+  });
+  document.addEventListener('mouseenter', (e) => {
+    const zoneEl = e.target.closest && e.target.closest('[data-paste-zone]');
+    if (zoneEl) _lastPasteZone = zoneEl.dataset.pasteZone;
+  }, true);
 
   document.addEventListener('paste', async (e) => {
     // Solo actuar si estamos viendo el detalle de una tarea y en modo admin
@@ -5816,8 +5824,12 @@ function initPasteZones() {
     }
     if (!file) return; // no hay imagen en el portapapeles, no interferir (ej: texto normal)
 
-    // Solo actúa si la última zona tocada/enfocada es descripción o entrega
-    const zone = _lastPasteZone;
+    // Determinar la zona: primero por dónde está el foco/click real al pegar,
+    // y si no se puede determinar, usar la última zona tocada como respaldo.
+    const activeZoneEl = document.activeElement && document.activeElement.closest
+      ? document.activeElement.closest('[data-paste-zone]')
+      : null;
+    const zone = (activeZoneEl && activeZoneEl.dataset.pasteZone) || _lastPasteZone;
     if (zone !== 'desc' && zone !== 'entrega') return;
 
     e.preventDefault();
