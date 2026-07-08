@@ -3352,6 +3352,13 @@ const SB_HEADERS = {
 const BANNER_IMG_URL = 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80';
 const BANNER_GIF_URL = 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif';
 
+// Al entrar o recargar la página se elige una sola vez (50/50) cuál imagen
+// mostrar en el banner de "estás libre / todo al día". Se mantiene fija
+// durante toda la sesión para que no cambie en cada re-render del home.
+const FREE_BANNER_IMG = Math.random() < 0.5
+  ? 'https://files.catbox.moe/8nb3gn.gif'
+  : 'https://files.catbox.moe/1twi9s.jpg';
+
 // ── API helpers ──────────────────────────────
 async function dbGetTasks() {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/tasks?select=*`, { headers: SB_HEADERS });
@@ -3743,7 +3750,7 @@ function renderHome() {
           <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: #2a2a3a;">
             <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;display:flex;align-items:center;gap:1rem;">
               <div style="flex-shrink:0;width:100px;height:100px;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
-                <img src="https://files.catbox.moe/8nb3gn.gif" alt="Sin tareas" style="width:100%;height:100%;object-fit:cover;">
+                <img src="${FREE_BANNER_IMG}" alt="Sin tareas" style="width:100%;height:100%;object-fit:cover;">
               </div>
               <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.5rem;flex:1;">
                 🎉 ¡Todo al día! Disfruta tu tiempo libre.
@@ -3761,7 +3768,7 @@ function renderHome() {
           <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: #1a2a4a;">
             <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:1rem 1.2rem;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:1.2rem;">
               <div style="flex-shrink:0;width:130px;height:130px;border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.5);">
-                <img src="https://files.catbox.moe/8nb3gn.gif" alt="Libre hoy" style="width:100%;height:100%;object-fit:cover;">
+                <img src="${FREE_BANNER_IMG}" alt="Libre hoy" style="width:100%;height:100%;object-fit:cover;">
               </div>
               <div style="flex:1;min-width:0;">
                 <div class="home-banner-text" style="color:white;text-shadow:none;font-size:1.3rem;">😎 ¡Estás libre hoy, chaval!</div>
