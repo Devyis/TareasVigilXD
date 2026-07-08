@@ -5238,8 +5238,9 @@ async function deleteDescImage(e, idx) {
 // task.pdfs.entrega_img (mismo campo JSON que ya usan teoria/tarea/adjuntos).
 function renderEntregaImages(task) {
   const container = document.getElementById('entrega-images');
-  if (!container) return;
+  if (!container) { console.warn('renderEntregaImages: no existe #entrega-images en el DOM'); return; }
   const imgs = (task.pdfs && task.pdfs.entrega_img) || [];
+  console.log('renderEntregaImages: mostrando', imgs.length, 'imágenes para la tarea', task.id, task.pdfs);
   if (!imgs.length) { container.innerHTML = ''; return; }
   container.innerHTML = imgs.map((path, i) => {
     const url = publicUrl(path);
@@ -5253,8 +5254,9 @@ function renderEntregaImages(task) {
 async function uploadEntregaImages(files) {
   if (!files || !files.length) return;
   const task = tasks[activeCourseId].find(t => t.id === activeTaskId);
-  if (!task.pdfs) task.pdfs = { teoria:[], tarea:[], adjuntos:[], entrega_img:[] };
-  if (!task.pdfs.entrega_img) task.pdfs.entrega_img = [];
+  if (!task) { console.error('uploadEntregaImages: no se encontró la tarea activa', activeCourseId, activeTaskId); return; }
+  if (!task.pdfs || typeof task.pdfs !== 'object') task.pdfs = { teoria:[], tarea:[], adjuntos:[], entrega_img:[] };
+  if (!Array.isArray(task.pdfs.entrega_img)) task.pdfs.entrega_img = [];
   const prog = document.getElementById('prog-entrega-img');
   const progbar = document.getElementById('progbar-entrega-img');
   if (prog) prog.classList.add('show');
@@ -5272,12 +5274,20 @@ async function uploadEntregaImages(files) {
       });
       if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || `Error ${res.status}`); }
       task.pdfs.entrega_img.push(path);
+      console.log('uploadEntregaImages: imagen subida al storage ->', path);
     } catch(e) {
+      console.error('uploadEntregaImages: error subiendo al storage', e);
       alert('Error subiendo imagen: ' + e.message);
     }
   }
 
-  await dbUpdateTask(activeTaskId, { pdfs: task.pdfs }).catch(()=>{});
+  try {
+    await dbUpdateTask(activeTaskId, { pdfs: task.pdfs });
+    console.log('uploadEntregaImages: pdfs guardado en la base de datos ->', task.pdfs);
+  } catch(e) {
+    console.error('uploadEntregaImages: error guardando en la base de datos', e);
+    alert('La imagen se subió pero no se pudo guardar en la base de datos: ' + e.message);
+  }
   if (progbar) progbar.style.width = '100%';
   renderEntregaImages(task);
   const input = document.getElementById('input-entrega-img');
@@ -5808,11 +5818,11 @@ function initPasteZones() {
     // Solo actuar si estamos viendo el detalle de una tarea y en modo admin
     const taskScreen = document.getElementById('screen-task');
     if (!taskScreen || !taskScreen.classList.contains('active')) return;
-    if (!isAdmin) return;
-    if (!activeCourseId || activeTaskId === null || activeTaskId === undefined) return;
+    if (!isAdmin) { console.log('[paste] ignorado: no está en modo admin'); return; }
+    if (!activeCourseId || activeTaskId === null || activeTaskId === undefined) { console.log('[paste] ignorado: no hay tarea activa'); return; }
 
     const items = e.clipboardData && e.clipboardData.items;
-    if (!items || !items.length) return;
+    if (!items || !items.length) { console.log('[paste] ignorado: portapapeles vacío'); return; }
 
     // Buscar la primera imagen presente en el portapapeles
     let file = null;
@@ -5822,7 +5832,7 @@ function initPasteZones() {
         if (f) { file = f; break; }
       }
     }
-    if (!file) return; // no hay imagen en el portapapeles, no interferir (ej: texto normal)
+    if (!file) { console.log('[paste] ignorado: el portapapeles no tiene una imagen', Array.from(items).map(i => i.type)); return; }
 
     // Determinar la zona: primero por dónde está el foco/click real al pegar,
     // y si no se puede determinar, usar la última zona tocada como respaldo.
@@ -5830,7 +5840,8 @@ function initPasteZones() {
       ? document.activeElement.closest('[data-paste-zone]')
       : null;
     const zone = (activeZoneEl && activeZoneEl.dataset.pasteZone) || _lastPasteZone;
-    if (zone !== 'desc' && zone !== 'entrega') return;
+    console.log('[paste] zona detectada:', zone, '(activeElement:', document.activeElement && document.activeElement.id, ')');
+    if (zone !== 'desc' && zone !== 'entrega') { console.log('[paste] ignorado: zona no reconocida'); return; }
 
     e.preventDefault();
     flashPasteZone(zone);
