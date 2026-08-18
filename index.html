@@ -2635,12 +2635,15 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
 .vs-vs-badge { font-family: 'Caveat', cursive; font-size: 1.1rem; font-weight: 700; color: var(--muted); }
 .vs-exit-btn { background: none; border: none; font-size: 1.1rem; color: var(--muted); cursor: pointer; padding: 0.3rem; }
 
-.vs-progress-row { display: flex; gap: 0.4rem; padding: 0.8rem 1.2rem 0; flex-shrink: 0; }
-.vs-progress-track { flex: 1; height: 8px; border-radius: 100px; background: var(--line); overflow: hidden; }
-.vs-progress-fill { height: 100%; border-radius: 100px; transition: width 0.3s; }
-.vs-progress-fill.mine { background: linear-gradient(90deg, var(--purple), #a855f7); }
-.vs-progress-fill.theirs { background: var(--accent); }
-.vs-progress-label { font-size: 0.6rem; color: var(--muted); text-align: center; margin-top: 0.25rem; }
+.vs-dots-row { display: flex; gap: 1.4rem; padding: 0.7rem 1.2rem 0; flex-shrink: 0; justify-content: center; flex-wrap: wrap; }
+.vs-dots-block { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+.vs-dots-label { font-size: 0.62rem; font-weight: 800; color: var(--ink2); max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-dots-track { display: flex; gap: 0.22rem; flex-wrap: wrap; justify-content: center; max-width: 140px; }
+.vs-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--line); transition: background 0.25s, transform 0.2s; flex-shrink: 0; }
+.vs-dot.correct { background: var(--green); transform: scale(1.1); }
+.vs-dot.wrong { background: var(--red); transform: scale(1.1); }
+
+.vs-ez-title { font-family: 'Caveat', cursive; font-size: 3.2rem; font-weight: 700; color: var(--green); text-shadow: 0 2px 12px rgba(47,158,68,0.35); }
 
 .vs-game-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 1.3rem; gap: 1.3rem; overflow-y: auto; }
 .vs-q-counter { font-size: 0.72rem; font-weight: 800; color: var(--purple); letter-spacing: 0.03em; }
@@ -3435,16 +3438,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
     <button class="vs-exit-btn" onclick="vsExitGame()">✕</button>
   </div>
-  <div class="vs-progress-row">
-    <div>
-      <div class="vs-progress-track"><div class="vs-progress-fill mine" id="vs-my-progress" style="width:0%"></div></div>
-      <div class="vs-progress-label">Vos</div>
-    </div>
-    <div>
-      <div class="vs-progress-track"><div class="vs-progress-fill theirs" id="vs-opp-progress" style="width:0%"></div></div>
-      <div class="vs-progress-label" id="vs-opp-progress-label">Rival</div>
-    </div>
-  </div>
+  <div class="vs-dots-row" id="vs-dots-row"><!-- filled by JS --></div>
   <div class="vs-game-body" id="vs-game-body"><!-- filled by JS --></div>
 </div>
 
@@ -6464,10 +6458,16 @@ function vsMatchCardHtml(m) {
     const oppAns = isHost ? m.guest_answers : m.host_answers;
     const myPct = vsPct(myAns);
     const oppPct = vsPct(oppAns);
-    if (myPct > oppPct) badge = `<span class="vs-match-badge win">🏆 Ganaste</span>`;
-    else if (myPct < oppPct) badge = `<span class="vs-match-badge lose">Perdiste</span>`;
-    else badge = `<span class="vs-match-badge tie">Empate</span>`;
-    sub = `${myPct}% vos · ${oppPct}% ${opp.displayName}`;
+    if (m.winner_username) {
+      const iWon = m.winner_username === currentUser.username;
+      badge = iWon ? `<span class="vs-match-badge win">🏆 EZ</span>` : `<span class="vs-match-badge lose">Perdiste</span>`;
+      sub = iWon ? 'Perfect 10/10 · ganaste al toque' : `${escHtml(opp.displayName)} hizo perfect 10/10`;
+    } else {
+      if (myPct > oppPct) badge = `<span class="vs-match-badge win">🏆 Ganaste</span>`;
+      else if (myPct < oppPct) badge = `<span class="vs-match-badge lose">Perdiste</span>`;
+      else badge = `<span class="vs-match-badge tie">Empate</span>`;
+      sub = `${myPct}% vos · ${oppPct}% ${opp.displayName}`;
+    }
   }
 
   return `
@@ -6611,12 +6611,9 @@ function vsOpenGameShell(m) {
   const me = vsUserInfo(isHost ? m.host_username : m.guest_username);
   const opp = vsUserInfo(isHost ? m.guest_username : m.host_username);
   document.getElementById('vs-my-avatar').innerHTML = vsAvatarHtml(me.displayName, me.avatarUrl);
-  document.getElementById('vs-my-name').textContent = 'Vos';
+  document.getElementById('vs-my-name').textContent = me.displayName;
   document.getElementById('vs-opp-avatar').innerHTML = vsAvatarHtml(opp.displayName, opp.avatarUrl);
   document.getElementById('vs-opp-name').textContent = opp.displayName;
-  document.getElementById('vs-opp-progress-label').textContent = opp.displayName;
-  document.getElementById('vs-my-progress').style.width = '0%';
-  document.getElementById('vs-opp-progress').style.width = '0%';
   document.getElementById('vs-game-overlay').classList.add('open');
 }
 
@@ -6632,14 +6629,40 @@ function vsExitGame() {
 }
 
 // ── Render current question ──
+function vsRenderDots(m) {
+  const row = document.getElementById('vs-dots-row');
+  if (!row) return;
+  const isHost = m.host_username === currentUser.username;
+  const myAnswers = isHost ? m.host_answers : m.guest_answers;
+  const oppAnswers = isHost ? m.guest_answers : m.host_answers;
+  const me = vsUserInfo(currentUser.username);
+  const opp = vsUserInfo(isHost ? m.guest_username : m.host_username);
+  const total = m.questions.length;
+
+  const dotsHtml = (answers) => Array.from({ length: total }).map((_, i) => {
+    const a = answers[i];
+    const cls = a ? (a.correct ? 'correct' : 'wrong') : '';
+    return `<div class="vs-dot ${cls}"></div>`;
+  }).join('');
+
+  row.innerHTML = `
+    <div class="vs-dots-block">
+      <div class="vs-dots-label">${escHtml(me.displayName)}</div>
+      <div class="vs-dots-track">${dotsHtml(myAnswers || [])}</div>
+    </div>
+    <div class="vs-dots-block">
+      <div class="vs-dots-label">${escHtml(opp.displayName)}</div>
+      <div class="vs-dots-track">${dotsHtml(oppAnswers || [])}</div>
+    </div>`;
+}
+
 function vsRenderQuestion(m) {
   const isHost = m.host_username === currentUser.username;
   const myIndex = isHost ? m.host_index : m.guest_index;
   const oppIndex = isHost ? m.guest_index : m.host_index;
   const total = m.questions.length;
 
-  document.getElementById('vs-my-progress').style.width = Math.round((myIndex / total) * 100) + '%';
-  document.getElementById('vs-opp-progress').style.width = Math.round((oppIndex / total) * 100) + '%';
+  vsRenderDots(m);
 
   if (myIndex >= total) {
     const oppFinished = oppIndex >= total;
@@ -6682,16 +6705,29 @@ async function vsAnswer(choiceIndex) {
   const myAnswers = [...(isHost ? m.host_answers : m.guest_answers)];
   myAnswers.push({ correct });
   const newIndex = myIndex + 1;
+  const total = m.questions.length;
+  const isPerfect = newIndex === total && myAnswers.every(a => a.correct);
+
   const fields = isHost
     ? { host_index: newIndex, host_answers: myAnswers }
     : { guest_index: newIndex, guest_answers: myAnswers };
+
+  // Si hizo perfect (10/10), corta el partido ahí mismo con "EZ" para ambos.
+  if (isPerfect) {
+    fields.status = 'finished';
+    fields.winner_username = currentUser.username;
+  }
 
   setTimeout(async () => {
     try {
       const updated = await vsUpdateMatch(m.id, fields);
       _vsActiveMatch = updated;
-      vsRenderQuestion(updated);
-      if (newIndex >= updated.questions.length) vsTryFinish(updated);
+      if (isPerfect) {
+        vsShowResult(updated);
+      } else {
+        vsRenderQuestion(updated);
+        if (newIndex >= updated.questions.length) vsTryFinish(updated);
+      }
     } catch (e) { /* will retry on next poll */ }
   }, 700);
 }
@@ -6716,12 +6752,37 @@ function vsShowResult(m) {
   const myPct = vsPct(isHost ? m.host_answers : m.guest_answers);
   const oppPct = vsPct(isHost ? m.guest_answers : m.host_answers);
 
+  document.getElementById('vs-game-overlay').classList.add('open');
+  const body = document.getElementById('vs-game-body');
+
+  // Corte por perfect 10/10 (carrera): el primero en 100% gana al toque, sea quien sea.
+  if (m.winner_username) {
+    const iWon = m.winner_username === currentUser.username;
+    const winner = vsUserInfo(m.winner_username);
+    body.innerHTML = `
+      <div class="vs-result-wrap" style="padding:0;">
+        <div class="vs-ez-title">EZ</div>
+        <div class="vs-result-title">${iWon ? '¡Perfect! Ganaste' : `${escHtml(winner.displayName)} hizo perfect`}</div>
+        <div class="vs-result-scores">
+          <div class="vs-score-block">
+            <div class="vs-score-pct me">${myPct}%</div>
+            <div class="vs-score-name">${escHtml(me.displayName)}</div>
+          </div>
+          <div class="vs-score-vs">vs</div>
+          <div class="vs-score-block">
+            <div class="vs-score-pct them">${oppPct}%</div>
+            <div class="vs-score-name">${escHtml(opp.displayName)}</div>
+          </div>
+        </div>
+        <button class="vs-result-btn" onclick="vsExitGame()">Volver</button>
+      </div>`;
+    return;
+  }
+
   let emoji = '🤝', title = '¡Empate!';
   if (myPct > oppPct) { emoji = '🏆'; title = '¡Ganaste!'; }
   else if (myPct < oppPct) { emoji = '😅'; title = `Ganó ${opp.displayName}`; }
 
-  document.getElementById('vs-game-overlay').classList.add('open');
-  const body = document.getElementById('vs-game-body');
   body.innerHTML = `
     <div class="vs-result-wrap" style="padding:0;">
       <div class="vs-result-emoji">${emoji}</div>
@@ -6729,7 +6790,7 @@ function vsShowResult(m) {
       <div class="vs-result-scores">
         <div class="vs-score-block">
           <div class="vs-score-pct me">${myPct}%</div>
-          <div class="vs-score-name">Vos</div>
+          <div class="vs-score-name">${escHtml(me.displayName)}</div>
         </div>
         <div class="vs-score-vs">vs</div>
         <div class="vs-score-block">
@@ -6766,12 +6827,12 @@ function vsStartPolling(matchId, role) {
       return;
     }
     if (m.status === 'active') {
-      // update opponent progress bar without disturbing my own question view
+      // Actualiza los dots del rival en vivo sin tocar mi vista de la pregunta actual
+      vsRenderDots(m);
       const isHost = m.host_username === currentUser.username;
       const myIndex = isHost ? m.host_index : m.guest_index;
       const oppIndex = isHost ? m.guest_index : m.host_index;
       const total = m.questions.length;
-      document.getElementById('vs-opp-progress').style.width = Math.round((oppIndex / total) * 100) + '%';
       if (myIndex >= total && oppIndex >= total) vsTryFinish(m);
     }
   }, 1500);
