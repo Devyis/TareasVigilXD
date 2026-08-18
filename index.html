@@ -2492,6 +2492,224 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
 }
 .fc-shuffle-btn:hover { border-color: var(--purple); color: var(--purple); transform: translateY(-1px) rotate(15deg); }
 
+/* ══════════════ VERSUS MODE ══════════════ */
+.vs-empty {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 0.7rem; text-align: center; padding: 2rem;
+  color: var(--muted);
+}
+.vs-empty-emoji { font-size: 2.4rem; }
+.vs-empty-title { font-family: 'Caveat', cursive; font-size: 1.3rem; font-weight: 700; color: var(--ink2); }
+.vs-empty-sub { font-size: 0.78rem; max-width: 260px; line-height: 1.5; }
+
+.vs-wrap { flex: 1; overflow-y: auto; padding: 1.1rem 1.2rem 1.6rem; display: flex; flex-direction: column; gap: 1rem; }
+
+.vs-challenge-btn {
+  width: 100%;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: none;
+  background: linear-gradient(135deg, var(--purple), #a855f7);
+  color: white;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(112,72,232,0.35);
+  transition: all 0.18s;
+  display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+}
+.vs-challenge-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(112,72,232,0.45); }
+.vs-challenge-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.vs-challenge-hint { font-size: 0.7rem; color: var(--muted); text-align: center; margin-top: -0.4rem; }
+
+.vs-section-header {
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+
+.vs-match-card {
+  background: var(--paper2);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+.vs-match-card:hover { border-color: var(--purple); transform: translateY(-1px); }
+.vs-match-card.pending-in { border-color: var(--orange); background: var(--orange-light); }
+.vs-match-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--accent-light); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Caveat', cursive; font-size: 1.3rem; font-weight: 700;
+  flex-shrink: 0; overflow: hidden;
+}
+.vs-match-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.vs-match-info { flex: 1; min-width: 0; }
+.vs-match-name { font-weight: 800; font-size: 0.85rem; color: var(--ink); }
+.vs-match-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.1rem; }
+.vs-match-badge {
+  font-size: 0.65rem; font-weight: 800; padding: 0.25rem 0.6rem;
+  border-radius: 100px; flex-shrink: 0; white-space: nowrap;
+}
+.vs-match-badge.waiting { background: var(--accent-light); color: var(--accent); }
+.vs-match-badge.invite { background: var(--orange-light); color: var(--orange); }
+.vs-match-badge.win { background: var(--green-light); color: var(--green); }
+.vs-match-badge.lose { background: var(--red-light); color: var(--red); }
+.vs-match-badge.tie { background: var(--line); color: var(--ink2); }
+
+/* Overlay: pick opponent */
+.vs-overlay {
+  position: fixed; inset: 0; z-index: 650;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(10,10,26,0.55);
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none; transition: opacity 0.2s;
+}
+.vs-overlay.open { opacity: 1; pointer-events: all; }
+.vs-sheet {
+  background: var(--paper);
+  border-radius: 20px 20px 0 0;
+  box-shadow: var(--shadow-lg);
+  width: 100%; max-width: 480px;
+  max-height: 80vh;
+  padding: 1.3rem 1.3rem 1.6rem;
+  display: flex; flex-direction: column;
+  transform: translateY(20px);
+  transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
+}
+.vs-overlay.open .vs-sheet { transform: translateY(0); }
+.vs-sheet-handle { width: 36px; height: 4px; background: var(--line); border-radius: 2px; margin: 0 auto 1rem; flex-shrink: 0; }
+.vs-sheet-title { font-family: 'Caveat', cursive; font-size: 1.4rem; font-weight: 700; color: var(--ink); margin-bottom: 0.9rem; flex-shrink: 0; }
+.vs-user-list { overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; }
+.vs-user-item {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.7rem 0.8rem; border-radius: 12px;
+  border: 2px solid var(--line); background: var(--paper2);
+  cursor: pointer; transition: all 0.15s;
+}
+.vs-user-item:hover { border-color: var(--purple); background: rgba(112,72,232,0.06); }
+.vs-cancel-btn {
+  width: 100%; margin-top: 0.9rem; padding: 0.65rem;
+  background: none; border: none; font-family: 'Nunito', sans-serif;
+  font-size: 0.75rem; color: var(--muted); cursor: pointer; border-radius: 8px; flex-shrink: 0;
+}
+.vs-cancel-btn:hover { color: var(--ink2); }
+
+/* Full-screen game overlay */
+.vs-game-overlay {
+  position: fixed; inset: 0; z-index: 700;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+}
+.vs-game-overlay.open { display: flex; }
+.vs-game-top {
+  padding: 1rem 1.2rem 0.8rem;
+  display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 2px solid var(--line);
+  flex-shrink: 0;
+}
+.vs-vs-players { display: flex; align-items: center; gap: 0.6rem; flex: 1; }
+.vs-player-chip { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
+.vs-player-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--accent-light); color: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Caveat', cursive; font-size: 1.2rem; font-weight: 700;
+  border: 2px solid var(--line); overflow: hidden;
+}
+.vs-player-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.vs-player-avatar.me { border-color: var(--purple); }
+.vs-player-name { font-size: 0.62rem; font-weight: 700; color: var(--ink2); max-width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vs-vs-badge { font-family: 'Caveat', cursive; font-size: 1.1rem; font-weight: 700; color: var(--muted); }
+.vs-exit-btn { background: none; border: none; font-size: 1.1rem; color: var(--muted); cursor: pointer; padding: 0.3rem; }
+
+.vs-progress-row { display: flex; gap: 0.4rem; padding: 0.8rem 1.2rem 0; flex-shrink: 0; }
+.vs-progress-track { flex: 1; height: 8px; border-radius: 100px; background: var(--line); overflow: hidden; }
+.vs-progress-fill { height: 100%; border-radius: 100px; transition: width 0.3s; }
+.vs-progress-fill.mine { background: linear-gradient(90deg, var(--purple), #a855f7); }
+.vs-progress-fill.theirs { background: var(--accent); }
+.vs-progress-label { font-size: 0.6rem; color: var(--muted); text-align: center; margin-top: 0.25rem; }
+
+.vs-game-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 1.5rem 1.3rem; gap: 1.3rem; overflow-y: auto; }
+.vs-q-counter { font-size: 0.72rem; font-weight: 800; color: var(--purple); letter-spacing: 0.03em; }
+.vs-q-text {
+  font-family: 'Caveat', cursive; font-size: 1.6rem; font-weight: 700;
+  color: var(--ink); text-align: center; line-height: 1.35;
+  max-width: 460px;
+}
+.vs-options { display: flex; flex-direction: column; gap: 0.65rem; width: 100%; max-width: 440px; }
+.vs-option-btn {
+  padding: 0.85rem 1rem; border-radius: 14px;
+  border: 2px solid var(--line); background: var(--paper);
+  font-family: 'Nunito', sans-serif; font-size: 0.82rem; font-weight: 600;
+  color: var(--ink); text-align: left; cursor: pointer;
+  box-shadow: var(--shadow); transition: all 0.15s;
+}
+.vs-option-btn:hover:not(:disabled) { border-color: var(--purple); transform: translateY(-1px); }
+.vs-option-btn:disabled { cursor: default; }
+.vs-option-btn.correct { border-color: var(--green); background: var(--green-light); color: var(--green); }
+.vs-option-btn.wrong { border-color: var(--red); background: var(--red-light); color: var(--red); }
+.vs-waiting-note { font-size: 0.75rem; color: var(--muted); text-align: center; }
+
+/* Result screen */
+.vs-result-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem 1.3rem; gap: 1.1rem; text-align: center; }
+.vs-result-emoji { font-size: 3rem; }
+.vs-result-title { font-family: 'Caveat', cursive; font-size: 2rem; font-weight: 700; color: var(--ink); }
+.vs-result-scores { display: flex; align-items: center; gap: 1.4rem; margin: 0.5rem 0; }
+.vs-score-block { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+.vs-score-pct { font-family: 'Caveat', cursive; font-size: 2.4rem; font-weight: 700; }
+.vs-score-pct.me { color: var(--purple); }
+.vs-score-pct.them { color: var(--accent); }
+.vs-score-name { font-size: 0.72rem; font-weight: 700; color: var(--ink2); }
+.vs-score-vs { font-size: 1rem; color: var(--muted); font-weight: 700; }
+.vs-result-btn {
+  padding: 0.75rem 1.6rem; border-radius: 100px; border: none;
+  background: var(--purple); color: white; font-family: 'Nunito', sans-serif;
+  font-size: 0.82rem; font-weight: 800; cursor: pointer; margin-top: 0.5rem;
+}
+
+/* Home invite badge */
+.vs-home-badge {
+  position: relative;
+}
+.vs-home-badge::after {
+  content: '';
+  position: absolute; top: -2px; right: -2px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--red); border: 2px solid var(--paper);
+}
+
+/* Home invite card */
+.vs-invite-card {
+  margin: 0 1.1rem 0.9rem;
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--purple), #a855f7);
+  color: white;
+  display: flex; align-items: center; gap: 0.8rem;
+  box-shadow: 0 4px 16px rgba(112,72,232,0.3);
+  cursor: pointer;
+  animation: vsPulse 1.8s ease-in-out infinite;
+}
+@keyframes vsPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.015); } }
+.vs-invite-emoji { font-size: 1.6rem; flex-shrink: 0; }
+.vs-invite-text { flex: 1; }
+.vs-invite-title { font-family: 'Caveat', cursive; font-size: 1.15rem; font-weight: 700; line-height: 1.2; }
+.vs-invite-sub { font-size: 0.7rem; opacity: 0.9; margin-top: 0.1rem; }
+.vs-invite-arrow { font-size: 1.2rem; flex-shrink: 0; }
+
 /* Empty state study */
 .fc-empty-study {
   flex: 1; display: flex; flex-direction: column;
@@ -2751,6 +2969,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   </div>
  <div id="home-banner-container"></div>
   <div id="ticker-wrap-container"></div>        <!-- ← ticker PRIMERO -->
+  <div id="vs-invites-container"></div>
   <div id="personal-section-container"></div>
   <div class="courses-list" id="courses-list"></div>
 </div>
@@ -3064,11 +3283,19 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     <div class="fc-tabs">
       <button class="fc-tab active" id="fc-tab-study" onclick="fcSwitchTab('study')">📖 Estudiar</button>
       <button class="fc-tab" id="fc-tab-manage" onclick="fcSwitchTab('manage')">⚙️ Gestionar</button>
+      <button class="fc-tab" id="fc-tab-versus" onclick="fcSwitchTab('versus')">⚔️ Versus</button>
     </div>
 
     <!-- STUDY TAB -->
     <div class="fc-tab-content active" id="fc-content-study" style="overflow-y:auto;">
       <div class="fc-study-wrap" id="fc-study-wrap">
+        <!-- filled by JS -->
+      </div>
+    </div>
+
+    <!-- VERSUS TAB -->
+    <div class="fc-tab-content" id="fc-content-versus">
+      <div class="vs-wrap" id="vs-wrap">
         <!-- filled by JS -->
       </div>
     </div>
@@ -3131,6 +3358,45 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
   </div>
 </div>
+<!-- VERSUS: PICK OPPONENT SHEET -->
+<div class="vs-overlay" id="vs-pick-overlay" onclick="if(event.target===this)vsCloseSheet()">
+  <div class="vs-sheet">
+    <div class="vs-sheet-handle"></div>
+    <div class="vs-sheet-title">⚔️ ¿A quién retás?</div>
+    <div class="vs-user-list" id="vs-user-list"><!-- filled by JS --></div>
+    <button class="vs-cancel-btn" onclick="vsCloseSheet()">Cancelar</button>
+  </div>
+</div>
+
+<!-- VERSUS: LIVE GAME -->
+<div class="vs-game-overlay" id="vs-game-overlay">
+  <div class="vs-game-top">
+    <div class="vs-vs-players">
+      <div class="vs-player-chip">
+        <div class="vs-player-avatar me" id="vs-my-avatar"></div>
+        <div class="vs-player-name" id="vs-my-name">Vos</div>
+      </div>
+      <div class="vs-vs-badge">VS</div>
+      <div class="vs-player-chip">
+        <div class="vs-player-avatar" id="vs-opp-avatar"></div>
+        <div class="vs-player-name" id="vs-opp-name">Rival</div>
+      </div>
+    </div>
+    <button class="vs-exit-btn" onclick="vsExitGame()">✕</button>
+  </div>
+  <div class="vs-progress-row">
+    <div>
+      <div class="vs-progress-track"><div class="vs-progress-fill mine" id="vs-my-progress" style="width:0%"></div></div>
+      <div class="vs-progress-label">Vos</div>
+    </div>
+    <div>
+      <div class="vs-progress-track"><div class="vs-progress-fill theirs" id="vs-opp-progress" style="width:0%"></div></div>
+      <div class="vs-progress-label" id="vs-opp-progress-label">Rival</div>
+    </div>
+  </div>
+  <div class="vs-game-body" id="vs-game-body"><!-- filled by JS --></div>
+</div>
+
 <div id="pill-dropdown-overlay" onclick="closePillDropdown()"></div>
 <div id="personal-task-modal" class="personal-modal-overlay">
   <div class="personal-modal-sheet">
@@ -3376,12 +3642,12 @@ function publicUrl(path) {
 // CURSOS
 // ═══════════════════════════════════════════
 const COURSES = [
-  { id: 'logica',  name: 'Desarrollo de Sistemas Distribuidos', icon: '🌐', color: '#3b5bdb', bg: '#e8edff' },
-  { id: 'java',    name: 'Programación Orientada a Objetos',    icon: '☕', color: '#e67700', bg: '#fff3e0' },
-  { id: 'ads',     name: 'Desarrollo de Soluciones Empresariales', icon: '📐', color: '#7048e8', bg: '#f3f0ff' },
-  { id: 'bdatos',  name: 'Gestión de Proyectos TI',             icon: '🗂️', color: '#0c8599', bg: '#e3fafc' },
-  { id: 'bdatos2', name: 'Base de Datos Distribuidas',          icon: '🗃️', color: '#1864ab', bg: '#e7f5ff' },
-  { id: 'innova',  name: 'Innovación Tecnológica',              icon: '💡', color: '#2f9e44', bg: '#ebfbee' },
+  { id: 'logica',  name: 'Lógica de Programación',        icon: '🧠', color: '#3b5bdb', bg: '#e8edff' },
+  { id: 'java',    name: 'Java',                           icon: '☕', color: '#e67700', bg: '#fff3e0' },
+  { id: 'ads',     name: 'ADS',                            icon: '📐', color: '#7048e8', bg: '#f3f0ff' },
+  { id: 'bdatos',  name: 'Diseño de Base de Datos',        icon: '🗄️', color: '#0c8599', bg: '#e3fafc' },
+  { id: 'bdatos2', name: 'Base de Datos',                  icon: '🗃️', color: '#1864ab', bg: '#e7f5ff' },
+  { id: 'innova',  name: 'Fundamentos de Innovación Tec.', icon: '💡', color: '#2f9e44', bg: '#ebfbee' },
 ];
 
 // ═══════════════════════════════════════════
@@ -3531,6 +3797,7 @@ function goBack(to) {
 // RENDER HOME
 // ═══════════════════════════════════════════
 function renderHome() {
+  vsRenderHomeInvites();
   document.getElementById('home-date').textContent =
     new Date().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
@@ -4739,6 +5006,8 @@ function logoutUser() {
   _personalStates = {};
   localStorage.removeItem('personal_user');
   renderPersonalSection();
+  const vsContainer = document.getElementById('vs-invites-container');
+  if (vsContainer) vsContainer.innerHTML = '';
 }
 
 async function loadPersonalStates() {
@@ -5328,20 +5597,32 @@ function checkFcPw() {
   }
 }
 
+let _vsPendingAutoOpenId = null;
+
 function fcShowMain() {
   document.getElementById('fc-pw-gate').style.display = 'none';
   const main = document.getElementById('fc-main');
   main.style.display = 'flex';
   fcRenderDeckBar();
   fcUpdateHero();
-  fcSwitchTab('study');
+  if (_vsPendingAutoOpenId) {
+    const id = _vsPendingAutoOpenId;
+    _vsPendingAutoOpenId = null;
+    fcSwitchTab('versus');
+    vsOpenMatch(id);
+  } else {
+    fcSwitchTab('study');
+  }
 }
 
 function fcSwitchTab(tab) {
   document.getElementById('fc-tab-study').classList.toggle('active', tab === 'study');
   document.getElementById('fc-tab-manage').classList.toggle('active', tab === 'manage');
+  document.getElementById('fc-tab-versus').classList.toggle('active', tab === 'versus');
   document.getElementById('fc-content-study').classList.toggle('active', tab === 'study');
   document.getElementById('fc-content-manage').classList.toggle('active', tab === 'manage');
+  document.getElementById('fc-content-versus').classList.toggle('active', tab === 'versus');
+  if (tab === 'versus') vsRenderTab();
   if (tab === 'study') fcRenderStudy();
   if (tab === 'manage') fcRenderList();
 }
@@ -5667,7 +5948,531 @@ function escHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+// ═══════════════════════════════════════════
+// VERSUS MODE (1v1 flashcards, live)
+// ═══════════════════════════════════════════
+const VS_QUESTION_COUNT = 10;
+let _vsAllUsers = [];          // cached users list [{username, display_name, avatar_url}]
+let _vsMyMatches = [];         // matches involving currentUser, for the tab list
+let _vsInviteMatch = null;     // pending invite shown on home
+let _vsActiveMatch = null;     // match currently being played
+let _vsPollTimer = null;
+let _vsHomePollTimer = null;
+let _vsAnsweredThisQ = false;
+
+function vsAvatarHtml(displayName, avatarUrl, extraClass) {
+  const initial = (displayName || '?').trim().charAt(0).toUpperCase();
+  if (avatarUrl) return `<img src="${avatarUrl}" alt="">`;
+  return escHtml(initial);
+}
+
+async function vsFetchUsers() {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/users?select=username,display_name,avatar_url&order=display_name.asc`, { headers: SB_HEADERS });
+    if (!res.ok) throw new Error('No se pudo cargar usuarios');
+    _vsAllUsers = await res.json();
+  } catch (e) {
+    _vsAllUsers = [];
+  }
+  return _vsAllUsers;
+}
+
+async function vsFetchMatchesFor(username) {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/versus_matches?or=(host_username.eq.${encodeURIComponent(username)},guest_username.eq.${encodeURIComponent(username)})&order=created_at.desc&limit=25`,
+      { headers: SB_HEADERS }
+    );
+    if (!res.ok) throw new Error('Error cargando partidas');
+    return await res.json();
+  } catch (e) {
+    return [];
+  }
+}
+
+async function vsInsertMatch(match) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/versus_matches`, {
+    method: 'POST', headers: SB_HEADERS, body: JSON.stringify(match)
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || 'Error al crear partida'); }
+  const rows = await res.json();
+  return rows[0];
+}
+
+async function vsUpdateMatch(id, fields) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/versus_matches?id=eq.${encodeURIComponent(id)}`, {
+    method: 'PATCH', headers: { ...SB_HEADERS, 'Prefer': 'return=representation' }, body: JSON.stringify(fields)
+  });
+  if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.message || 'Error al actualizar'); }
+  const rows = await res.json();
+  return rows[0];
+}
+
+async function vsFetchMatch(id) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/versus_matches?id=eq.${encodeURIComponent(id)}&select=*`, { headers: SB_HEADERS });
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+function vsUserInfo(username) {
+  const u = _vsAllUsers.find(x => x.username === username);
+  return u ? { displayName: u.display_name, avatarUrl: u.avatar_url || '' } : { displayName: username, avatarUrl: '' };
+}
+
+// ── Build 10 multiple-choice questions from the active deck ──
+function vsBuildQuestions() {
+  const cards = fcGetCards();
+  if (cards.length < 4) return null; // need at least 4 for distractors
+  const shuffled = [...cards];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  const picked = shuffled.slice(0, Math.min(VS_QUESTION_COUNT, shuffled.length));
+  return picked.map(card => {
+    const pool = cards.filter(c => c !== card && c.a.trim() !== card.a.trim());
+    const distractors = [];
+    const poolCopy = [...pool];
+    while (distractors.length < 3 && poolCopy.length) {
+      const idx = Math.floor(Math.random() * poolCopy.length);
+      distractors.push(poolCopy.splice(idx, 1)[0].a);
+    }
+    // Pad with placeholder distractors if the deck is too small/homogeneous
+    while (distractors.length < 3) distractors.push('— (sin datos) —');
+    const options = [card.a, ...distractors];
+    for (let i = options.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [options[i], options[j]] = [options[j], options[i]];
+    }
+    return { q: card.q, correct_index: options.indexOf(card.a), options };
+  });
+}
+
+// ── TAB: list of matches + challenge button ──
+async function vsRenderTab() {
+  const wrap = document.getElementById('vs-wrap');
+  const cards = fcGetCards();
+  if (cards.length < 4) {
+    wrap.innerHTML = `
+      <div class="vs-empty">
+        <div class="vs-empty-emoji">⚔️</div>
+        <div class="vs-empty-title">Necesitás más tarjetas</div>
+        <div class="vs-empty-sub">Para jugar Versus el mazo necesita al menos 4 tarjetas (se generan 4 opciones por pregunta). Agregá más en "Gestionar".</div>
+      </div>`;
+    return;
+  }
+  if (!currentUser) {
+    wrap.innerHTML = `
+      <div class="vs-empty">
+        <div class="vs-empty-emoji">👤</div>
+        <div class="vs-empty-title">Iniciá sesión primero</div>
+        <div class="vs-empty-sub">Necesitás tu cuenta personal (desde el inicio) para retar a alguien.</div>
+      </div>`;
+    return;
+  }
+
+  wrap.innerHTML = `
+    <button class="vs-challenge-btn" onclick="vsOpenPickSheet()">⚔️ Retar a alguien con este mazo</button>
+    <div class="vs-challenge-hint">Se generan ${VS_QUESTION_COUNT} preguntas de opción múltiple al azar de este mazo.</div>
+    <div class="vs-section-header">Tus partidas</div>
+    <div id="vs-match-list"><div class="vs-empty-sub" style="padding:0.5rem 0;">Cargando…</div></div>
+  `;
+
+  if (!_vsAllUsers.length) await vsFetchUsers();
+  const deck = fcGetActiveDeck();
+  const all = await vsFetchMatchesFor(currentUser.username);
+  _vsMyMatches = all.filter(m => m.deck_id === (deck ? deck.id : null) && m.task_id === String(activeTaskId));
+
+  const listEl = document.getElementById('vs-match-list');
+  if (!listEl) return; // tab may have changed while awaiting
+  if (!_vsMyMatches.length) {
+    listEl.innerHTML = `<div class="vs-empty-sub" style="padding:0.5rem 0;">Todavía no jugaste ninguna partida con este mazo.</div>`;
+    return;
+  }
+  listEl.innerHTML = _vsMyMatches.map(m => vsMatchCardHtml(m)).join('');
+}
+
+function vsMatchCardHtml(m) {
+  const isHost = m.host_username === currentUser.username;
+  const oppUsername = isHost ? m.guest_username : m.host_username;
+  const opp = vsUserInfo(oppUsername);
+  let badge = '', sub = '', pendingClass = '';
+
+  if (m.status === 'pending') {
+    if (isHost) { badge = `<span class="vs-match-badge waiting">Esperando</span>`; sub = 'Invitación enviada'; }
+    else { badge = `<span class="vs-match-badge invite">¡Te retó!</span>`; sub = 'Tocá para aceptar'; pendingClass = 'pending-in'; }
+  } else if (m.status === 'declined') {
+    badge = `<span class="vs-match-badge lose">Rechazada</span>`; sub = 'No aceptó el reto';
+  } else if (m.status === 'active') {
+    badge = `<span class="vs-match-badge waiting">En juego</span>`; sub = 'Partida en curso — tocá para continuar';
+  } else if (m.status === 'finished') {
+    const myAns = isHost ? m.host_answers : m.guest_answers;
+    const oppAns = isHost ? m.guest_answers : m.host_answers;
+    const myPct = vsPct(myAns);
+    const oppPct = vsPct(oppAns);
+    if (myPct > oppPct) badge = `<span class="vs-match-badge win">🏆 Ganaste</span>`;
+    else if (myPct < oppPct) badge = `<span class="vs-match-badge lose">Perdiste</span>`;
+    else badge = `<span class="vs-match-badge tie">Empate</span>`;
+    sub = `${myPct}% vos · ${oppPct}% ${opp.displayName}`;
+  }
+
+  return `
+    <div class="vs-match-card ${pendingClass}" onclick="vsOpenMatch('${m.id}')">
+      <div class="vs-match-avatar">${vsAvatarHtml(opp.displayName, opp.avatarUrl)}</div>
+      <div class="vs-match-info">
+        <div class="vs-match-name">${escHtml(opp.displayName)}</div>
+        <div class="vs-match-sub">${escHtml(sub)}</div>
+      </div>
+      ${badge}
+    </div>`;
+}
+
+function vsPct(answers) {
+  if (!answers || !answers.length) return 0;
+  const correct = answers.filter(a => a && a.correct).length;
+  return Math.round((correct / answers.length) * 100);
+}
+
+// ── PICK OPPONENT SHEET ──
+async function vsOpenPickSheet() {
+  if (!_vsAllUsers.length) await vsFetchUsers();
+  const others = _vsAllUsers.filter(u => u.username !== currentUser.username);
+  const listEl = document.getElementById('vs-user-list');
+  if (!others.length) {
+    listEl.innerHTML = `<div class="vs-empty-sub">No hay otros usuarios registrados todavía.</div>`;
+  } else {
+    listEl.innerHTML = others.map(u => `
+      <div class="vs-user-item" onclick="vsChallenge('${u.username}')">
+        <div class="vs-match-avatar">${vsAvatarHtml(u.display_name, u.avatar_url)}</div>
+        <div class="vs-match-info">
+          <div class="vs-match-name">${escHtml(u.display_name)}</div>
+        </div>
+      </div>`).join('');
+  }
+  document.getElementById('vs-pick-overlay').classList.add('open');
+}
+
+function vsCloseSheet() {
+  document.getElementById('vs-pick-overlay').classList.remove('open');
+}
+
+async function vsChallenge(guestUsername) {
+  vsCloseSheet();
+  const deck = fcGetActiveDeck();
+  if (!deck) return;
+  const questions = vsBuildQuestions();
+  if (!questions) { alert('El mazo necesita al menos 4 tarjetas.'); return; }
+
+  const match = {
+    id: 'vs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    task_id: String(activeTaskId),
+    deck_id: deck.id,
+    deck_name: deck.name,
+    questions,
+    host_username: currentUser.username,
+    guest_username: guestUsername,
+    status: 'pending',
+    host_index: 0,
+    guest_index: 0,
+    host_answers: [],
+    guest_answers: [],
+  };
+  try {
+    const saved = await vsInsertMatch(match);
+    _vsActiveMatch = saved;
+    vsRenderTab();
+    vsOpenWaitingForAccept(saved);
+  } catch (e) {
+    alert('No se pudo crear la partida: ' + e.message);
+  }
+}
+
+// ── Waiting-room state right after challenging ──
+function vsOpenWaitingForAccept(match) {
+  vsOpenGameShell(match);
+  const body = document.getElementById('vs-game-body');
+  body.innerHTML = `
+    <div class="vs-q-text">Esperando a que ${escHtml(vsUserInfo(match.guest_username).displayName)} acepte el reto…</div>
+    <div class="vs-waiting-note">Esta pantalla se actualiza sola ✦</div>`;
+  vsStartPolling(match.id, 'host');
+}
+
+// ── Open an existing match (from list or invite) ──
+async function vsOpenMatch(id) {
+  const m = await vsFetchMatch(id);
+  if (!m) return;
+  _vsActiveMatch = m;
+  const isHost = m.host_username === currentUser.username;
+
+  if (m.status === 'pending' && !isHost) {
+    vsOpenGameShell(m);
+    const body = document.getElementById('vs-game-body');
+    const host = vsUserInfo(m.host_username);
+    body.innerHTML = `
+      <div class="vs-q-text">${escHtml(host.displayName)} te retó a un Versus de "${escHtml(m.deck_name)}" 🔥</div>
+      <div class="vs-options">
+        <button class="vs-option-btn" onclick="vsAcceptMatch()">✅ Aceptar el reto</button>
+        <button class="vs-option-btn" onclick="vsDeclineMatch()">❌ Rechazar</button>
+      </div>`;
+    return;
+  }
+  if (m.status === 'pending' && isHost) {
+    vsOpenWaitingForAccept(m);
+    return;
+  }
+  if (m.status === 'declined') {
+    alert(`${vsUserInfo(m.guest_username).displayName} rechazó este reto.`);
+    return;
+  }
+  if (m.status === 'finished') {
+    vsShowResult(m);
+    return;
+  }
+  // active
+  vsOpenGameShell(m);
+  vsRenderQuestion(m);
+  vsStartPolling(m.id, isHost ? 'host' : 'guest');
+}
+
+async function vsAcceptMatch() {
+  if (!_vsActiveMatch) return;
+  try {
+    const updated = await vsUpdateMatch(_vsActiveMatch.id, { status: 'active' });
+    _vsActiveMatch = updated;
+    vsRenderQuestion(updated);
+    vsStartPolling(updated.id, 'guest');
+  } catch (e) { alert('Error al aceptar: ' + e.message); }
+}
+
+async function vsDeclineMatch() {
+  if (!_vsActiveMatch) return;
+  try { await vsUpdateMatch(_vsActiveMatch.id, { status: 'declined' }); } catch(e) {}
+  vsCloseGameShell();
+  vsRenderTab();
+}
+
+// ── Game shell (avatars, header) ──
+function vsOpenGameShell(m) {
+  const isHost = m.host_username === currentUser.username;
+  const me = vsUserInfo(isHost ? m.host_username : m.guest_username);
+  const opp = vsUserInfo(isHost ? m.guest_username : m.host_username);
+  document.getElementById('vs-my-avatar').innerHTML = vsAvatarHtml(me.displayName, me.avatarUrl);
+  document.getElementById('vs-my-name').textContent = 'Vos';
+  document.getElementById('vs-opp-avatar').innerHTML = vsAvatarHtml(opp.displayName, opp.avatarUrl);
+  document.getElementById('vs-opp-name').textContent = opp.displayName;
+  document.getElementById('vs-opp-progress-label').textContent = opp.displayName;
+  document.getElementById('vs-my-progress').style.width = '0%';
+  document.getElementById('vs-opp-progress').style.width = '0%';
+  document.getElementById('vs-game-overlay').classList.add('open');
+}
+
+function vsCloseGameShell() {
+  document.getElementById('vs-game-overlay').classList.remove('open');
+  vsStopPolling();
+  _vsActiveMatch = null;
+}
+
+function vsExitGame() {
+  vsCloseGameShell();
+  vsRenderTab();
+}
+
+// ── Render current question ──
+function vsRenderQuestion(m) {
+  const isHost = m.host_username === currentUser.username;
+  const myIndex = isHost ? m.host_index : m.guest_index;
+  const oppIndex = isHost ? m.guest_index : m.host_index;
+  const total = m.questions.length;
+
+  document.getElementById('vs-my-progress').style.width = Math.round((myIndex / total) * 100) + '%';
+  document.getElementById('vs-opp-progress').style.width = Math.round((oppIndex / total) * 100) + '%';
+
+  if (myIndex >= total) {
+    const oppFinished = oppIndex >= total;
+    const body = document.getElementById('vs-game-body');
+    body.innerHTML = `
+      <div class="vs-q-text">¡Listo! Ya respondiste las ${total} preguntas 🎉</div>
+      <div class="vs-waiting-note">${oppFinished ? 'Calculando resultado…' : `Esperando a que ${escHtml(vsUserInfo(isHost ? m.guest_username : m.host_username).displayName)} termine…`}</div>`;
+    if (oppFinished && m.status !== 'finished') vsTryFinish(m);
+    return;
+  }
+
+  _vsAnsweredThisQ = false;
+  const q = m.questions[myIndex];
+  const body = document.getElementById('vs-game-body');
+  body.innerHTML = `
+    <div class="vs-q-counter">PREGUNTA ${myIndex + 1} DE ${total}</div>
+    <div class="vs-q-text">${escHtml(q.q)}</div>
+    <div class="vs-options" id="vs-options">
+      ${q.options.map((opt, i) => `<button class="vs-option-btn" onclick="vsAnswer(${i})">${escHtml(opt)}</button>`).join('')}
+    </div>`;
+}
+
+async function vsAnswer(choiceIndex) {
+  if (_vsAnsweredThisQ || !_vsActiveMatch) return;
+  _vsAnsweredThisQ = true;
+  const m = _vsActiveMatch;
+  const isHost = m.host_username === currentUser.username;
+  const myIndex = isHost ? m.host_index : m.guest_index;
+  const q = m.questions[myIndex];
+  const correct = choiceIndex === q.correct_index;
+
+  // Visual feedback
+  const btns = document.querySelectorAll('#vs-options .vs-option-btn');
+  btns.forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.correct_index) b.classList.add('correct');
+    else if (i === choiceIndex) b.classList.add('wrong');
+  });
+
+  const myAnswers = [...(isHost ? m.host_answers : m.guest_answers)];
+  myAnswers.push({ correct });
+  const newIndex = myIndex + 1;
+  const fields = isHost
+    ? { host_index: newIndex, host_answers: myAnswers }
+    : { guest_index: newIndex, guest_answers: myAnswers };
+
+  setTimeout(async () => {
+    try {
+      const updated = await vsUpdateMatch(m.id, fields);
+      _vsActiveMatch = updated;
+      vsRenderQuestion(updated);
+      if (newIndex >= updated.questions.length) vsTryFinish(updated);
+    } catch (e) { /* will retry on next poll */ }
+  }, 700);
+}
+
+async function vsTryFinish(m) {
+  const hostDone = m.host_index >= m.questions.length;
+  const guestDone = m.guest_index >= m.questions.length;
+  if (hostDone && guestDone && m.status !== 'finished') {
+    try {
+      const updated = await vsUpdateMatch(m.id, { status: 'finished' });
+      _vsActiveMatch = updated;
+      vsShowResult(updated);
+    } catch (e) {}
+  }
+}
+
+function vsShowResult(m) {
+  vsStopPolling();
+  const isHost = m.host_username === currentUser.username;
+  const me = vsUserInfo(isHost ? m.host_username : m.guest_username);
+  const opp = vsUserInfo(isHost ? m.guest_username : m.host_username);
+  const myPct = vsPct(isHost ? m.host_answers : m.guest_answers);
+  const oppPct = vsPct(isHost ? m.guest_answers : m.host_answers);
+
+  let emoji = '🤝', title = '¡Empate!';
+  if (myPct > oppPct) { emoji = '🏆'; title = '¡Ganaste!'; }
+  else if (myPct < oppPct) { emoji = '😅'; title = `Ganó ${opp.displayName}`; }
+
+  document.getElementById('vs-game-overlay').classList.add('open');
+  const body = document.getElementById('vs-game-body');
+  body.innerHTML = `
+    <div class="vs-result-wrap" style="padding:0;">
+      <div class="vs-result-emoji">${emoji}</div>
+      <div class="vs-result-title">${escHtml(title)}</div>
+      <div class="vs-result-scores">
+        <div class="vs-score-block">
+          <div class="vs-score-pct me">${myPct}%</div>
+          <div class="vs-score-name">Vos</div>
+        </div>
+        <div class="vs-score-vs">vs</div>
+        <div class="vs-score-block">
+          <div class="vs-score-pct them">${oppPct}%</div>
+          <div class="vs-score-name">${escHtml(opp.displayName)}</div>
+        </div>
+      </div>
+      <button class="vs-result-btn" onclick="vsExitGame()">Volver</button>
+    </div>`;
+}
+
+// ── Polling while a match is active ──
+function vsStartPolling(matchId, role) {
+  vsStopPolling();
+  _vsPollTimer = setInterval(async () => {
+    const m = await vsFetchMatch(matchId);
+    if (!m || !_vsActiveMatch) return;
+    const prevStatus = _vsActiveMatch.status;
+    _vsActiveMatch = m;
+
+    if (m.status === 'declined' && prevStatus !== 'declined') {
+      vsCloseGameShell();
+      alert('Rechazaron el reto.');
+      vsRenderTab();
+      return;
+    }
+    if (m.status === 'active' && prevStatus === 'pending') {
+      // opponent accepted while we were waiting
+      vsRenderQuestion(m);
+      return;
+    }
+    if (m.status === 'finished') {
+      vsShowResult(m);
+      return;
+    }
+    if (m.status === 'active') {
+      // update opponent progress bar without disturbing my own question view
+      const isHost = m.host_username === currentUser.username;
+      const myIndex = isHost ? m.host_index : m.guest_index;
+      const oppIndex = isHost ? m.guest_index : m.host_index;
+      const total = m.questions.length;
+      document.getElementById('vs-opp-progress').style.width = Math.round((oppIndex / total) * 100) + '%';
+      if (myIndex >= total && oppIndex >= total) vsTryFinish(m);
+    }
+  }, 1500);
+}
+
+function vsStopPolling() {
+  if (_vsPollTimer) { clearInterval(_vsPollTimer); _vsPollTimer = null; }
+}
+
+// ── Home: pending invites badge/card ──
+async function vsRenderHomeInvites() {
+  const container = document.getElementById('vs-invites-container');
+  if (!container) return;
+  if (!currentUser) { container.innerHTML = ''; return; }
+  const all = await vsFetchMatchesFor(currentUser.username);
+  const invite = all.find(m => m.status === 'pending' && m.guest_username === currentUser.username);
+  if (!invite) { container.innerHTML = ''; return; }
+  if (!_vsAllUsers.length) await vsFetchUsers();
+  const host = vsUserInfo(invite.host_username);
+  container.innerHTML = `
+    <div class="vs-invite-card" onclick="vsOpenInviteFromHome('${invite.id}')">
+      <div class="vs-invite-emoji">⚔️</div>
+      <div class="vs-invite-text">
+        <div class="vs-invite-title">${escHtml(host.displayName)} te retó a un Versus</div>
+        <div class="vs-invite-sub">Mazo: ${escHtml(invite.deck_name)} · Tocá para responder</div>
+      </div>
+      <div class="vs-invite-arrow">→</div>
+    </div>`;
+}
+
+async function vsOpenInviteFromHome(matchId) {
+  const m = await vsFetchMatch(matchId);
+  if (!m) return;
+  // Locate the course/task this match's deck belongs to.
+  let cid = null;
+  for (const c in tasks) {
+    if ((tasks[c] || []).some(t => String(t.id) === String(m.task_id))) { cid = c; break; }
+  }
+  if (!cid) { alert('No se encontró la tarea de esta partida (puede haber sido eliminada).'); return; }
+  activeCourseId = cid;
+  activeTaskId = isNaN(Number(m.task_id)) ? m.task_id : Number(m.task_id);
+
+  openFcPanel(); // handles password gate + loads the right deck data into _fcDecks
+  _vsPendingAutoOpenId = matchId;
+}
+
+function vsStartHomePolling() {
+  if (_vsHomePollTimer) clearInterval(_vsHomePollTimer);
+  vsRenderHomeInvites();
+  _vsHomePollTimer = setInterval(vsRenderHomeInvites, 8000);
+}
+
 init();
+vsStartHomePolling();
 </script>
 </body>
 </html>
