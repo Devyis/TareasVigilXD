@@ -2710,6 +2710,49 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
 .vs-invite-sub { font-size: 0.7rem; opacity: 0.9; margin-top: 0.1rem; }
 .vs-invite-arrow { font-size: 1.2rem; flex-shrink: 0; }
 
+/* Big notification popup for new Versus challenges */
+.vs-notify-overlay {
+  position: fixed; inset: 0; z-index: 900;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1.2rem;
+  background: rgba(10,10,26,0.65);
+  backdrop-filter: blur(6px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.vs-notify-overlay.open { opacity: 1; pointer-events: all; }
+.vs-notify-card {
+  width: 100%; max-width: 360px;
+  background: var(--paper);
+  border-radius: 24px;
+  padding: 2rem 1.6rem 1.6rem;
+  text-align: center;
+  box-shadow: 0 12px 48px rgba(112,72,232,0.4);
+  border: 3px solid var(--purple);
+  transform: scale(0.85) translateY(10px);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.vs-notify-overlay.open .vs-notify-card { transform: scale(1) translateY(0); }
+.vs-notify-emoji { font-size: 3rem; animation: vsShake 0.6s ease-in-out infinite; }
+@keyframes vsShake {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
+}
+.vs-notify-title { font-family: 'Caveat', cursive; font-size: 1.7rem; font-weight: 700; color: var(--ink); margin-top: 0.8rem; line-height: 1.25; }
+.vs-notify-sub { font-size: 0.8rem; color: var(--muted); margin-top: 0.4rem; }
+.vs-notify-actions { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 1.4rem; }
+.vs-notify-accept {
+  padding: 0.9rem; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--purple), #a855f7);
+  color: white; font-family: 'Nunito', sans-serif; font-size: 0.9rem; font-weight: 800;
+  cursor: pointer; box-shadow: 0 4px 16px rgba(112,72,232,0.35);
+}
+.vs-notify-later {
+  padding: 0.6rem; border-radius: 14px; border: none; background: none;
+  color: var(--muted); font-family: 'Nunito', sans-serif; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+}
+
 /* Empty state study */
 .fc-empty-study {
   flex: 1; display: flex; flex-direction: column;
@@ -3358,6 +3401,11 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     </div>
   </div>
 </div>
+<!-- VERSUS: BIG NOTIFICATION POPUP -->
+<div class="vs-notify-overlay" id="vs-notify-overlay">
+  <div class="vs-notify-card" id="vs-notify-body"><!-- filled by JS --></div>
+</div>
+
 <!-- VERSUS: PICK OPPONENT SHEET -->
 <div class="vs-overlay" id="vs-pick-overlay" onclick="if(event.target===this)vsCloseSheet()">
   <div class="vs-sheet">
@@ -6428,15 +6476,45 @@ function vsStopPolling() {
   if (_vsPollTimer) { clearInterval(_vsPollTimer); _vsPollTimer = null; }
 }
 
-// ── Home: pending invites badge/card ──
+// ── Home: pending invites badge/card + big notification popup ──
+let _vsSeenInviteIds = new Set();
+let _vsNotifyAudioCtx = null;
+
+function vsPlayNotifySound() {
+  try {
+    if (!_vsNotifyAudioCtx) _vsNotifyAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = _vsNotifyAudioCtx;
+    const notes = [660, 880];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      const start = ctx.currentTime + i * 0.14;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(0.18, start + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.22);
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + 0.24);
+    });
+  } catch(e) { /* audio not available, ignore */ }
+}
+
+function vsVibrate() {
+  if (navigator.vibrate) { try { navigator.vibrate([120, 60, 120]); } catch(e) {} }
+}
+
 async function vsRenderHomeInvites() {
   const container = document.getElementById('vs-invites-container');
   if (!container) return;
   if (!currentUser) { container.innerHTML = ''; return; }
   const all = await vsFetchMatchesFor(currentUser.username);
-  const invite = all.find(m => m.status === 'pending' && m.guest_username === currentUser.username);
-  if (!invite) { container.innerHTML = ''; return; }
+  const invites = all.filter(m => m.status === 'pending' && m.guest_username === currentUser.username);
+  if (!invites.length) { container.innerHTML = ''; return; }
   if (!_vsAllUsers.length) await vsFetchUsers();
+
+  const invite = invites[0];
   const host = vsUserInfo(invite.host_username);
   container.innerHTML = `
     <div class="vs-invite-card" onclick="vsOpenInviteFromHome('${invite.id}')">
@@ -6447,6 +6525,32 @@ async function vsRenderHomeInvites() {
       </div>
       <div class="vs-invite-arrow">→</div>
     </div>`;
+
+  // Detect brand-new invites (not seen before this session) → big popup + sound + vibration
+  const newOnes = invites.filter(m => !_vsSeenInviteIds.has(m.id));
+  invites.forEach(m => _vsSeenInviteIds.add(m.id));
+  if (newOnes.length && !document.getElementById('vs-notify-overlay').classList.contains('open')) {
+    vsShowNotifyPopup(newOnes[0]);
+    vsPlayNotifySound();
+    vsVibrate();
+  }
+}
+
+function vsShowNotifyPopup(invite) {
+  const host = vsUserInfo(invite.host_username);
+  document.getElementById('vs-notify-body').innerHTML = `
+    <div class="vs-notify-emoji">⚔️</div>
+    <div class="vs-notify-title">${escHtml(host.displayName)} te retó a un Versus</div>
+    <div class="vs-notify-sub">Mazo: ${escHtml(invite.deck_name)}</div>
+    <div class="vs-notify-actions">
+      <button class="vs-notify-accept" onclick="vsOpenInviteFromHome('${invite.id}')">⚔️ Aceptar y jugar</button>
+      <button class="vs-notify-later" onclick="vsCloseNotifyPopup()">Ahora no</button>
+    </div>`;
+  document.getElementById('vs-notify-overlay').classList.add('open');
+}
+
+function vsCloseNotifyPopup() {
+  document.getElementById('vs-notify-overlay').classList.remove('open');
 }
 
 async function vsOpenInviteFromHome(matchId) {
@@ -6461,14 +6565,31 @@ async function vsOpenInviteFromHome(matchId) {
   activeCourseId = cid;
   activeTaskId = isNaN(Number(m.task_id)) ? m.task_id : Number(m.task_id);
 
-  openFcPanel(); // handles password gate + loads the right deck data into _fcDecks
-  _vsPendingAutoOpenId = matchId;
+  vsCloseNotifyPopup();
+  vsEnterMatchDirectly(matchId);
+}
+
+// Loads the deck data needed for a Versus match WITHOUT the Probanding password gate.
+function vsEnterMatchDirectly(matchId) {
+  const task = tasks[activeCourseId] && tasks[activeCourseId].find(t => t.id === activeTaskId);
+  const data = fcMigrateData(task ? task.flashcards : null);
+  _fcDecks = data.decks.map(d => ({ ...d, cards: d.cards ? [...d.cards] : [] }));
+  if (!_fcDecks.length) _fcDecks = [{ id: 'default', name: 'Mazo principal', cards: [] }];
+  _fcActiveDeckId = _fcDecks[0].id;
+
+  goTo('probanding');
+  document.getElementById('fc-pw-gate').style.display = 'none';
+  document.getElementById('fc-main').style.display = 'flex';
+  fcRenderDeckBar();
+  fcUpdateHero();
+  fcSwitchTab('versus');
+  vsOpenMatch(matchId);
 }
 
 function vsStartHomePolling() {
   if (_vsHomePollTimer) clearInterval(_vsHomePollTimer);
   vsRenderHomeInvites();
-  _vsHomePollTimer = setInterval(vsRenderHomeInvites, 8000);
+  _vsHomePollTimer = setInterval(vsRenderHomeInvites, 5000);
 }
 
 init();
