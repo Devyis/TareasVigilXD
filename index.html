@@ -3004,6 +3004,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
       </div>
       <div style="display:flex;gap:0.5rem;align-items:center;">
         <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Cambiar modo día/noche">🌙</button>
+        <button class="theme-toggle" id="crack-mode-btn" onclick="toggleCrackMode()" title="Modo Crack" style="display:none;">💊</button>
         <button class="admin-btn-home" id="home-past-tasks-btn" onclick="openHomePastTasksModal()" title="Ver tareas pasadas">🗂️ pasadas</button>
         <button class="admin-btn-home" id="admin-btn" onclick="openPwModal()">⚙ admin</button>
       </div>
@@ -3490,6 +3491,31 @@ function initTheme() {
   }
 }
 initTheme();
+
+// ═══════════════════════════════════════════
+// MODO CRACK (solo usuario "siesta")
+// ═══════════════════════════════════════════
+const EMPTY_GIF_NORMAL = 'https://files.catbox.moe/8nb3gn.gif';
+const EMPTY_GIF_CRACK  = 'https://files.catbox.moe/g0i5fe.png';
+let _crackMode = false;
+
+function getEmptyStateGif() {
+  return _crackMode ? EMPTY_GIF_CRACK : EMPTY_GIF_NORMAL;
+}
+
+function toggleCrackMode() {
+  _crackMode = !_crackMode;
+  const btn = document.getElementById('crack-mode-btn');
+  if (btn) btn.textContent = _crackMode ? '🟢' : '💊';
+  // Re-renderiza el banner de home para que el gif cambie al toque
+  if (typeof renderHome === 'function') renderHome();
+}
+
+function updateCrackButtonVisibility() {
+  const btn = document.getElementById('crack-mode-btn');
+  if (!btn) return;
+  btn.style.display = (currentUser && currentUser.username === 'siesta') ? 'flex' : 'none';
+}
 
 // ═══════════════════════════════════════════
 // QUICK TASK POPUP
@@ -4026,7 +4052,7 @@ function renderHome() {
           <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: #2a2a3a;">
             <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:0.9rem 1rem;display:flex;align-items:center;gap:1rem;">
               <div style="flex-shrink:0;width:100px;height:100px;border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
-                <img src="https://files.catbox.moe/8nb3gn.gif" alt="Sin tareas" style="width:100%;height:100%;object-fit:cover;">
+                <img src="${getEmptyStateGif()}" alt="Sin tareas" style="width:100%;height:100%;object-fit:cover;">
               </div>
               <div class="home-banner-text" style="color:white;text-shadow:none;margin-bottom:0.5rem;flex:1;">
                 🎉 ¡Todo al día! Disfruta tu tiempo libre.
@@ -4044,7 +4070,7 @@ function renderHome() {
           <div class="home-banner" style="margin:1.2rem 1.2rem 0; background: #1a2a4a;">
             <div class="home-banner-overlay" style="background:none;position:relative;inset:auto;padding:1rem 1.2rem;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:1.2rem;">
               <div style="flex-shrink:0;width:130px;height:130px;border-radius:14px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.5);">
-                <img src="https://files.catbox.moe/8nb3gn.gif" alt="Libre hoy" style="width:100%;height:100%;object-fit:cover;">
+                <img src="${getEmptyStateGif()}" alt="Libre hoy" style="width:100%;height:100%;object-fit:cover;">
               </div>
               <div style="flex:1;min-width:0;">
                 <div class="home-banner-text" style="color:white;text-shadow:none;font-size:1.3rem;">😎 ¡Estás libre hoy, chaval!</div>
@@ -4900,6 +4926,7 @@ let _loginMode = 'login'; // 'login' | 'register'
 
 function loadCurrentUser() {
   try { currentUser = JSON.parse(localStorage.getItem('personal_user')) || null; } catch(e) { currentUser = null; }
+  updateCrackButtonVisibility();
 }
 
 async function refreshCurrentUserFromDb() {
@@ -4939,6 +4966,7 @@ async function loginPersonal() {
     errEl.classList.remove('show');
     currentUser = { username: rows[0].username, displayName: rows[0].display_name, avatarUrl: rows[0].avatar_url || '' };
     localStorage.setItem('personal_user', JSON.stringify(currentUser));
+    updateCrackButtonVisibility();
     await loadPersonalStates();
     renderPersonalSection();
   } catch(e) {
@@ -5052,7 +5080,9 @@ async function uploadAvatar(file) {
 function logoutUser() {
   currentUser = null;
   _personalStates = {};
+  _crackMode = false;
   localStorage.removeItem('personal_user');
+  updateCrackButtonVisibility();
   renderPersonalSection();
   const vsContainer = document.getElementById('vs-invites-container');
   if (vsContainer) vsContainer.innerHTML = '';
@@ -5625,7 +5655,26 @@ function openFcPanel() {
     document.getElementById('fc-pw-input').value = '';
     document.getElementById('fc-pw-err').classList.remove('show');
     setTimeout(() => document.getElementById('fc-pw-input').focus(), 300);
+    fcSkipGateIfVersusParticipant();
   }
+}
+
+// Si el usuario actual tiene un match de Versus (pendiente o activo) para esta tarea,
+// como host o invitado, se salta la contraseña de Probanding directamente.
+async function fcSkipGateIfVersusParticipant() {
+  if (!currentUser) return;
+  try {
+    const all = await vsFetchMatchesFor(currentUser.username);
+    const relevant = all.find(m =>
+      String(m.task_id) === String(activeTaskId) &&
+      (m.status === 'pending' || m.status === 'active') &&
+      (m.host_username === currentUser.username || m.guest_username === currentUser.username)
+    );
+    if (relevant) {
+      _fcUnlocked = true;
+      fcShowMain();
+    }
+  } catch (e) { /* si falla, se mantiene el gate normal */ }
 }
 
 function closeFcPanel() {
