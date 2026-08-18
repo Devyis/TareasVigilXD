@@ -6,6 +6,7 @@
 <title>Mis Cursos</title>
 <link rel="icon" type="image/jpeg" href="https://files.catbox.moe/m27jnp.jpg">
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Nunito:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root {
   --bg: #faf9f6;
@@ -2062,6 +2063,9 @@ input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
   max-height: 80vh; overflow-y: auto;
 }
 .personal-modal-overlay.open .personal-modal-sheet { transform: translateY(0); }
+.personal-modal-sheet.wide-sheet { max-width: 96vw; max-height: 94vh; }
+.horario-img-wrap { width: 100%; max-height: 78vh; overflow: auto; border-radius: 12px; background: var(--paper2); display: flex; align-items: flex-start; justify-content: center; }
+.horario-img-wrap img { display: block; width: 100%; height: auto; }
 .personal-modal-title {
   font-family: 'Caveat', cursive;
   font-size: 1.4rem;
@@ -3470,15 +3474,15 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
 
 <!-- MODAL: HORARIO -->
 <div id="horario-modal" class="personal-modal-overlay" onclick="if(event.target===this) closeHorarioModal()">
-  <div class="personal-modal-sheet">
+  <div class="personal-modal-sheet wide-sheet">
     <div class="modal-handle"></div>
     <div class="personal-modal-title">🗓️ Horario</div>
     <div id="horario-modal-body" style="margin-top:0.6rem;">
       <div class="vs-empty-sub" style="padding:0.5rem 0;">Cargando…</div>
     </div>
     <label class="upload-img-label" id="horario-upload-label" style="margin-top:0.8rem;cursor:pointer;">
-      <span id="horario-upload-text">📎 Subir / reemplazar horario</span>
-      <input type="file" accept="image/*" style="display:none;" onchange="uploadHorarioImage(this.files[0])">
+      <span id="horario-upload-text">📎 Subir / reemplazar horario (imagen o PDF)</span>
+      <input type="file" accept="image/*,application/pdf" style="display:none;" onchange="uploadHorarioImage(this.files[0])">
     </label>
     <div class="modal-footer" style="margin-top:1rem">
       <button class="btn-cancel" onclick="closeHorarioModal()">Cerrar</button>
@@ -5248,12 +5252,11 @@ async function openHorarioModal() {
   document.getElementById('horario-modal').classList.add('open');
   const body = document.getElementById('horario-modal-body');
   body.innerHTML = `<div class="vs-empty-sub" style="padding:0.5rem 0;">Cargando…</div>`;
-  const label = document.getElementById('horario-upload-label');
-  document.getElementById('horario-upload-text').textContent = '📎 Subir / reemplazar horario';
+  document.getElementById('horario-upload-text').textContent = '📎 Subir / reemplazar horario (imagen o PDF)';
 
   await fetchHorarioUrl();
   if (_horarioUrl) {
-    body.innerHTML = `<img src="${_horarioUrl}" alt="Horario" style="width:100%;border-radius:12px;display:block;">`;
+    body.innerHTML = `<div class="horario-img-wrap"><img src="${_horarioUrl}" alt="Horario"></div>`;
   } else {
     body.innerHTML = `
       <div class="vs-empty">
@@ -5268,18 +5271,59 @@ function closeHorarioModal() {
   document.getElementById('horario-modal').classList.remove('open');
 }
 
+// Convierte la primera página de un PDF a un Blob PNG de alta resolución usando PDF.js.
+async function pdfFileToImageBlob(file) {
+  if (window['pdfjsLib'] && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const page = await pdf.getPage(1);
+
+  const scale = 2.5; // alta resolución para que se lea bien una tabla ancha
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext('2d');
+  // Fondo blanco (los PDF suelen tener transparencia donde no hay contenido)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('No se pudo generar la imagen del PDF')), 'image/png', 0.95);
+  });
+}
+
 async function uploadHorarioImage(file) {
   if (!file) return;
   const textEl = document.getElementById('horario-upload-text');
   const prevText = textEl.textContent;
-  textEl.textContent = 'Subiendo…';
 
   try {
     const ext = file.name.split('.').pop().toLowerCase();
-    const allowed = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-    if (!allowed.includes(ext)) { alert('Solo se permiten imágenes (jpg, png, gif, webp)'); textEl.textContent = prevText; return; }
+    const isPdf = ext === 'pdf' || file.type === 'application/pdf';
+    const allowedImg = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+    if (!isPdf && !allowedImg.includes(ext)) {
+      alert('Solo se permiten imágenes (jpg, png, gif, webp) o un PDF.');
+      return;
+    }
 
-    const fileName = `horario_${Date.now()}.${ext}`;
+    let uploadBlob = file;
+    let uploadExt = ext;
+    let contentType = file.type || 'image/jpeg';
+
+    if (isPdf) {
+      textEl.textContent = 'Convirtiendo PDF a imagen…';
+      uploadBlob = await pdfFileToImageBlob(file);
+      uploadExt = 'png';
+      contentType = 'image/png';
+    }
+
+    textEl.textContent = 'Subiendo…';
+    const fileName = `horario_${Date.now()}.${uploadExt}`;
 
     // 1. Subir al Storage bucket "avatars" (mismo bucket público que ya usa la app)
     const uploadRes = await fetch(
@@ -5289,10 +5333,10 @@ async function uploadHorarioImage(file) {
         headers: {
           'apikey': SUPABASE_ANON,
           'Authorization': `Bearer ${SUPABASE_ANON}`,
-          'Content-Type': file.type || 'image/jpeg',
+          'Content-Type': contentType,
           'x-upsert': 'true'
         },
-        body: file
+        body: uploadBlob
       }
     );
     if (!uploadRes.ok) {
@@ -5316,8 +5360,8 @@ async function uploadHorarioImage(file) {
 
     _horarioUrl = horarioUrl;
     const body = document.getElementById('horario-modal-body');
-    body.innerHTML = `<img src="${horarioUrl}" alt="Horario" style="width:100%;border-radius:12px;display:block;">`;
-    textEl.textContent = '📎 Subir / reemplazar horario';
+    body.innerHTML = `<div class="horario-img-wrap"><img src="${horarioUrl}" alt="Horario"></div>`;
+    textEl.textContent = '📎 Subir / reemplazar horario (imagen o PDF)';
   } catch (e) {
     alert('Error al subir el horario: ' + e.message);
     textEl.textContent = prevText;
