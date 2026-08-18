@@ -3004,7 +3004,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
       </div>
       <div style="display:flex;gap:0.5rem;align-items:center;">
         <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Cambiar modo día/noche">🌙</button>
-        <button class="theme-toggle" id="crack-mode-btn" onclick="toggleCrackMode()" title="Modo Crack" style="display:none;">💊</button>
+        <button class="theme-toggle" id="crack-mode-btn" onclick="toggleCrackMode()" title="Modo especial" style="display:none;font-weight:800;">A</button>
         <button class="admin-btn-home" id="home-past-tasks-btn" onclick="openHomePastTasksModal()" title="Ver tareas pasadas">🗂️ pasadas</button>
         <button class="admin-btn-home" id="admin-btn" onclick="openPwModal()">⚙ admin</button>
       </div>
@@ -3013,6 +3013,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   </div>
  <div id="home-banner-container"></div>
   <div id="ticker-wrap-container"></div>        <!-- ← ticker PRIMERO -->
+  <div id="home-versus-section-container"></div>  <!-- ← Apartado Versus (solo logueados) -->
   <div id="vs-invites-container"></div>
   <div id="personal-section-container"></div>
   <div class="courses-list" id="courses-list"></div>
@@ -3472,6 +3473,52 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   </div>
 </div>
 
+<!-- SCREEN VS-A — VERSUS: ELEGIR CURSO -->
+<div id="screen-vs-courses" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack('home')">←</button>
+    <div class="topbar-title">⚔️ Versus · Cursos</div>
+  </div>
+  <div style="padding:1rem 1.2rem;">
+    <div class="vs-empty-sub" style="margin-bottom:0.8rem;">Elegí el curso del mazo con el que querés retar a alguien.</div>
+    <div class="courses-list" id="vs-courses-list"></div>
+  </div>
+</div>
+
+<!-- SCREEN VS-B — VERSUS: ELEGIR TAREA -->
+<div id="screen-vs-tasks" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack('vs-courses')">←</button>
+    <div class="topbar-title" id="vs-tasks-title">⚔️ Versus · Tareas</div>
+  </div>
+  <div style="padding:1rem 1.2rem;">
+    <div id="vs-tasks-list"></div>
+  </div>
+</div>
+
+<!-- SCREEN VS-C — VERSUS: ELEGIR MAZO -->
+<div id="screen-vs-decks" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goBack('vs-tasks')">←</button>
+    <div class="topbar-title" id="vs-decks-title">⚔️ Versus · Mazos</div>
+  </div>
+  <div style="padding:1rem 1.2rem;">
+    <div id="vs-decks-list"></div>
+  </div>
+</div>
+
+<!-- SCREEN VS-D — VERSUS: RIVALES CONECTADOS -->
+<div id="screen-vs-rivals" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="vsCloseRivalsScreen()">←</button>
+    <div class="topbar-title">⚔️ Elegí rival</div>
+  </div>
+  <div style="padding:1rem 1.2rem;">
+    <div class="vs-empty-sub" style="margin-bottom:0.8rem;">Solo se muestran usuarios conectados ahora mismo. La lista se actualiza sola.</div>
+    <div id="vs-rivals-list"><div class="vs-empty-sub" style="padding:0.5rem 0;">Buscando conectados…</div></div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 // ═══════════════════════════════════════════
@@ -3493,20 +3540,50 @@ function initTheme() {
 initTheme();
 
 // ═══════════════════════════════════════════
-// MODO CRACK (solo usuario "siesta")
+// MODOS ESPECIALES POR USUARIO
 // ═══════════════════════════════════════════
 const EMPTY_GIF_NORMAL = 'https://files.catbox.moe/8nb3gn.gif';
-const EMPTY_GIF_CRACK  = 'https://files.catbox.moe/g0i5fe.png';
-let _crackMode = false;
+
+// Cada entrada = un usuario con su propio botón/modo especial.
+// username: tal cual se guarda en Supabase (minúsculas, respetando espacios internos).
+const SPECIAL_MODES = {
+  'siesta': {
+    label: 'Modo A',
+    textOff: 'A',
+    textOn: 'A',
+    gif: 'https://files.catbox.moe/g0i5fe.png'
+  },
+  'davis baboso': {
+    label: 'Modo H',
+    textOff: 'H',
+    textOn: 'H',
+    gif: 'https://files.catbox.moe/g0i5fe.png' // cambiar por el gif propio de davis cuando lo tengas
+  }
+};
+
+let _specialModeOn = false;
+
+function getCurrentSpecialConfig() {
+  if (!currentUser) return null;
+  return SPECIAL_MODES[currentUser.username] || null;
+}
 
 function getEmptyStateGif() {
-  return _crackMode ? EMPTY_GIF_CRACK : EMPTY_GIF_NORMAL;
+  const cfg = getCurrentSpecialConfig();
+  return (_specialModeOn && cfg) ? cfg.gif : EMPTY_GIF_NORMAL;
 }
 
 function toggleCrackMode() {
-  _crackMode = !_crackMode;
+  const cfg = getCurrentSpecialConfig();
+  if (!cfg) return;
+  _specialModeOn = !_specialModeOn;
   const btn = document.getElementById('crack-mode-btn');
-  if (btn) btn.textContent = _crackMode ? '🟢' : '💊';
+  if (btn) {
+    btn.textContent = cfg.textOn;
+    btn.style.opacity = _specialModeOn ? '1' : '0.55';
+    btn.style.borderColor = _specialModeOn ? 'var(--accent)' : 'var(--line)';
+    btn.style.color = _specialModeOn ? 'var(--accent)' : 'var(--ink2)';
+  }
   // Re-renderiza el banner de home para que el gif cambie al toque
   if (typeof renderHome === 'function') renderHome();
 }
@@ -3514,7 +3591,19 @@ function toggleCrackMode() {
 function updateCrackButtonVisibility() {
   const btn = document.getElementById('crack-mode-btn');
   if (!btn) return;
-  btn.style.display = (currentUser && currentUser.username === 'siesta') ? 'flex' : 'none';
+  const cfg = getCurrentSpecialConfig();
+  _specialModeOn = false; // reset al cambiar de usuario
+  if (cfg) {
+    btn.style.display = 'flex';
+    btn.title = cfg.label;
+    btn.textContent = cfg.textOff;
+    btn.style.opacity = '0.55';
+    btn.style.borderColor = 'var(--line)';
+    btn.style.color = 'var(--ink2)';
+    btn.style.fontWeight = '800';
+  } else {
+    btn.style.display = 'none';
+  }
 }
 
 // ═══════════════════════════════════════════
@@ -3659,6 +3748,44 @@ const SB_HEADERS = {
 
 const BANNER_IMG_URL = 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=800&q=80';
 const BANNER_GIF_URL = 'https://media.giphy.com/media/3o7abKhOpu0NwenH3O/giphy.gif';
+
+// ═══════════════════════════════════════════
+// PRESENCIA (last_seen) — para saber quién está "conectado"
+// ═══════════════════════════════════════════
+const PRESENCE_HEARTBEAT_MS = 15000; // cada cuánto avisamos "sigo acá"
+const PRESENCE_ONLINE_WINDOW_MS = 45000; // ventana para considerar a alguien "conectado"
+let _presenceTimer = null;
+
+async function presenceHeartbeat() {
+  if (!currentUser) return;
+  try {
+    await fetch(
+      `${SUPABASE_URL}/rest/v1/users?username=eq.${encodeURIComponent(currentUser.username)}`,
+      {
+        method: 'PATCH',
+        headers: SB_HEADERS,
+        body: JSON.stringify({ last_seen: new Date().toISOString() })
+      }
+    );
+  } catch (e) { /* si falla, se reintenta en el próximo tick */ }
+}
+
+function startPresenceHeartbeat() {
+  stopPresenceHeartbeat();
+  if (!currentUser) return;
+  presenceHeartbeat(); // primer aviso inmediato
+  _presenceTimer = setInterval(presenceHeartbeat, PRESENCE_HEARTBEAT_MS);
+}
+
+function stopPresenceHeartbeat() {
+  if (_presenceTimer) { clearInterval(_presenceTimer); _presenceTimer = null; }
+}
+
+function isUserOnline(lastSeenStr) {
+  if (!lastSeenStr) return false;
+  const diff = Date.now() - new Date(lastSeenStr).getTime();
+  return diff >= 0 && diff <= PRESENCE_ONLINE_WINDOW_MS;
+}
 
 // ── API helpers ──────────────────────────────
 async function dbGetTasks() {
@@ -3862,9 +3989,12 @@ function goTo(id) {
 
 function goBack(to) {
   if (_countdownInterval) { clearInterval(_countdownInterval); _countdownInterval = null; }
+  vsStopRivalsPolling();
   showScreen(to, 'back');
   if (to === 'home')   renderHome();
   if (to === 'course') renderCourse(activeCourseId);
+  if (to === 'vs-courses') renderVsCoursesScreen();
+  if (to === 'vs-tasks')   renderVsTasksScreen(_vsSelectedCourseId);
 }
 
 // ═══════════════════════════════════════════
@@ -3872,6 +4002,7 @@ function goBack(to) {
 // ═══════════════════════════════════════════
 function renderHome() {
   vsRenderHomeInvites();
+  renderHomeVersusSection();
   document.getElementById('home-date').textContent =
     new Date().toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
 
@@ -4927,6 +5058,7 @@ let _loginMode = 'login'; // 'login' | 'register'
 function loadCurrentUser() {
   try { currentUser = JSON.parse(localStorage.getItem('personal_user')) || null; } catch(e) { currentUser = null; }
   updateCrackButtonVisibility();
+  startPresenceHeartbeat();
 }
 
 async function refreshCurrentUserFromDb() {
@@ -4967,6 +5099,7 @@ async function loginPersonal() {
     currentUser = { username: rows[0].username, displayName: rows[0].display_name, avatarUrl: rows[0].avatar_url || '' };
     localStorage.setItem('personal_user', JSON.stringify(currentUser));
     updateCrackButtonVisibility();
+    startPresenceHeartbeat();
     await loadPersonalStates();
     renderPersonalSection();
   } catch(e) {
@@ -5008,6 +5141,8 @@ async function registerPersonal() {
     errEl.classList.remove('show');
     currentUser = { username: u, displayName: name, avatarUrl: '' };
     localStorage.setItem('personal_user', JSON.stringify(currentUser));
+    updateCrackButtonVisibility();
+    startPresenceHeartbeat();
     await loadPersonalStates();
     renderPersonalSection();
   } catch(e) {
@@ -5080,12 +5215,15 @@ async function uploadAvatar(file) {
 function logoutUser() {
   currentUser = null;
   _personalStates = {};
-  _crackMode = false;
+  _specialModeOn = false;
   localStorage.removeItem('personal_user');
   updateCrackButtonVisibility();
+  stopPresenceHeartbeat();
   renderPersonalSection();
   const vsContainer = document.getElementById('vs-invites-container');
   if (vsContainer) vsContainer.innerHTML = '';
+  const homeVsContainer = document.getElementById('home-versus-section-container');
+  if (homeVsContainer) homeVsContainer.innerHTML = '';
 }
 
 async function loadPersonalStates() {
@@ -6633,6 +6771,228 @@ function vsEnterMatchDirectly(matchId) {
   fcUpdateHero();
   fcSwitchTab('versus');
   vsOpenMatch(matchId);
+}
+
+// ═══════════════════════════════════════════
+// APARTADO VERSUS (debajo de Pendientes, solo logueados)
+// Flujo: cursos → tareas (con mazo) → mazos → rivales conectados
+// ═══════════════════════════════════════════
+let _vsSelectedCourseId = null;
+let _vsSelectedTaskId = null;
+let _vsRivalsPollTimer = null;
+
+function renderHomeVersusSection() {
+  const container = document.getElementById('home-versus-section-container');
+  if (!container) return;
+  if (!currentUser) { container.innerHTML = ''; return; }
+  container.innerHTML = `
+    <div class="vs-section-header" style="margin:1.1rem 1.2rem 0.4rem;">⚔️ Versus</div>
+    <div class="qtask-btn ver-mas" style="margin:0 1.2rem 0.2rem;width:calc(100% - 2.4rem);" onclick="goTo('vs-courses'); renderVsCoursesScreen();">
+      <span class="qtask-btn-icon">⚔️</span>
+      <div class="qtask-btn-text">
+        <div class="qtask-btn-title">Retar a alguien</div>
+        <div class="qtask-btn-sub">Elegí curso → tarea → mazo → rival conectado</div>
+      </div>
+    </div>`;
+}
+
+// ── Paso 1: cursos ──
+function renderVsCoursesScreen() {
+  const listEl = document.getElementById('vs-courses-list');
+  if (!listEl) return;
+  listEl.innerHTML = COURSES.map(c => {
+    const examCount = (tasks[c.id] || []).filter(t => t.categoria === 'examen').length;
+    return `
+      <div class="course-card" onclick="vsPickCourse('${c.id}')">
+        <div class="course-card-accent" style="background:${c.color}"></div>
+        <div class="course-card-inner">
+          <div class="course-icon" style="background:${c.bg}">${c.icon}</div>
+          <div class="course-info">
+            <div class="course-card-name">${escHtml(c.name)}</div>
+            <div class="course-card-sub">${examCount} mazo${examCount !== 1 ? 's' : ''} disponible${examCount !== 1 ? 's' : ''}</div>
+          </div>
+          <div class="course-card-right">
+            <span class="chevron">›</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function vsPickCourse(cid) {
+  _vsSelectedCourseId = cid;
+  goTo('vs-tasks');
+  renderVsTasksScreen(cid);
+}
+
+// ── Paso 2: tareas con mazo (categoria === 'examen') de ese curso ──
+function renderVsTasksScreen(cid) {
+  const listEl = document.getElementById('vs-tasks-list');
+  const titleEl = document.getElementById('vs-tasks-title');
+  if (!listEl) return;
+  const course = COURSES.find(c => c.id === cid);
+  if (titleEl) titleEl.textContent = `⚔️ ${course ? course.icon + ' ' + course.name : 'Tareas'}`;
+
+  const examTasks = (tasks[cid] || []).filter(t => t.categoria === 'examen');
+  if (!examTasks.length) {
+    listEl.innerHTML = `
+      <div class="vs-empty">
+        <div class="vs-empty-emoji">📭</div>
+        <div class="vs-empty-title">Sin mazos en este curso</div>
+        <div class="vs-empty-sub">Este curso todavía no tiene tareas de tipo examen con mazos de Probanding.</div>
+      </div>`;
+    return;
+  }
+  listEl.innerHTML = examTasks.map(t => `
+    <div class="vs-user-item" onclick="vsPickTask('${cid}','${t.id}')">
+      <div class="vs-match-avatar" style="background:var(--examen-light);color:var(--examen);">📝</div>
+      <div class="vs-match-info">
+        <div class="vs-match-name">${escHtml(t.name)}</div>
+        <div class="vs-match-sub">Tocá para ver sus mazos</div>
+      </div>
+      <span class="chevron">›</span>
+    </div>`).join('');
+}
+
+function vsPickTask(cid, tid) {
+  _vsSelectedCourseId = cid;
+  _vsSelectedTaskId = tid;
+  goTo('vs-decks');
+  renderVsDecksScreen(cid, tid);
+}
+
+// ── Paso 3: mazos de esa tarea ──
+function renderVsDecksScreen(cid, tid) {
+  const listEl = document.getElementById('vs-decks-list');
+  const titleEl = document.getElementById('vs-decks-title');
+  if (!listEl) return;
+  const task = (tasks[cid] || []).find(t => String(t.id) === String(tid));
+  if (titleEl) titleEl.textContent = `⚔️ ${task ? task.name : 'Mazos'}`;
+
+  const data = fcMigrateData(task ? task.flashcards : null);
+  const decks = data.decks && data.decks.length ? data.decks : [{ id: 'default', name: 'Mazo principal', cards: [] }];
+
+  listEl.innerHTML = decks.map(d => `
+    <div class="vs-user-item" onclick="vsPickDeck('${cid}','${tid}','${d.id}')">
+      <div class="vs-match-avatar">📦</div>
+      <div class="vs-match-info">
+        <div class="vs-match-name">${escHtml(d.name)}</div>
+        <div class="vs-match-sub">${(d.cards || []).length} tarjeta${(d.cards || []).length !== 1 ? 's' : ''}</div>
+      </div>
+      <span class="chevron">›</span>
+    </div>`).join('');
+}
+
+// ── Paso 4: rivales conectados ──
+function vsPickDeck(cid, tid, deckId) {
+  activeCourseId = cid;
+  activeTaskId = isNaN(Number(tid)) ? tid : Number(tid);
+
+  const task = tasks[cid] && tasks[cid].find(t => String(t.id) === String(tid));
+  const data = fcMigrateData(task ? task.flashcards : null);
+  _fcDecks = data.decks.map(d => ({ ...d, cards: d.cards ? [...d.cards] : [] }));
+  if (!_fcDecks.length) _fcDecks = [{ id: 'default', name: 'Mazo principal', cards: [] }];
+  _fcActiveDeckId = _fcDecks.find(d => d.id === deckId) ? deckId : _fcDecks[0].id;
+
+  const deck = fcGetActiveDeck();
+  if (!deck || (deck.cards || []).length < 4) {
+    alert('Este mazo necesita al menos 4 tarjetas para jugar Versus.');
+    return;
+  }
+
+  goTo('vs-rivals');
+  vsRenderRivalsScreen();
+  vsStartRivalsPolling();
+}
+
+async function vsRenderRivalsScreen() {
+  const listEl = document.getElementById('vs-rivals-list');
+  if (!listEl) return;
+  if (!_vsAllUsers.length) await vsFetchUsers();
+
+  // Traer last_seen fresco de todos los usuarios
+  let usersWithPresence = [];
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/users?select=username,display_name,avatar_url,last_seen`,
+      { headers: SB_HEADERS }
+    );
+    usersWithPresence = await res.json();
+  } catch (e) {
+    usersWithPresence = _vsAllUsers;
+  }
+
+  const online = usersWithPresence.filter(u =>
+    u.username !== currentUser.username && isUserOnline(u.last_seen)
+  );
+
+  if (!listEl) return; // por si cambiamos de pantalla mientras esperaba
+  if (!online.length) {
+    listEl.innerHTML = `<div class="vs-empty-sub" style="padding:0.5rem 0;">Nadie conectado ahora</div>`;
+    return;
+  }
+
+  listEl.innerHTML = online.map(u => `
+    <div class="vs-user-item" onclick="vsChallengeFromRivals('${u.username}')">
+      <div class="vs-match-avatar">${vsAvatarHtml(u.display_name, u.avatar_url)}</div>
+      <div class="vs-match-info">
+        <div class="vs-match-name">${escHtml(u.display_name)}</div>
+        <div class="vs-match-sub" style="color:var(--green);">🟢 Conectado</div>
+      </div>
+    </div>`).join('');
+}
+
+function vsStartRivalsPolling() {
+  vsStopRivalsPolling();
+  _vsRivalsPollTimer = setInterval(vsRenderRivalsScreen, PRESENCE_HEARTBEAT_MS);
+}
+
+function vsStopRivalsPolling() {
+  if (_vsRivalsPollTimer) { clearInterval(_vsRivalsPollTimer); _vsRivalsPollTimer = null; }
+}
+
+function vsCloseRivalsScreen() {
+  vsStopRivalsPolling();
+  goTo('vs-decks');
+  renderVsDecksScreen(_vsSelectedCourseId, _vsSelectedTaskId);
+}
+
+// Reto desde la pantalla de rivales conectados, luego entra directo al juego (sin gate de contraseña)
+async function vsChallengeFromRivals(guestUsername) {
+  vsStopRivalsPolling();
+  const deck = fcGetActiveDeck();
+  if (!deck) return;
+  const questions = vsBuildQuestions();
+  if (!questions) { alert('El mazo necesita al menos 4 tarjetas.'); return; }
+
+  const match = {
+    id: 'vs_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    task_id: String(activeTaskId),
+    deck_id: deck.id,
+    deck_name: deck.name,
+    questions,
+    host_username: currentUser.username,
+    guest_username: guestUsername,
+    status: 'pending',
+    host_index: 0,
+    guest_index: 0,
+    host_answers: [],
+    guest_answers: [],
+  };
+  try {
+    const saved = await vsInsertMatch(match);
+    _vsActiveMatch = saved;
+    _fcUnlocked = true; // ya pasó por el flujo autenticado, sin gate
+    goTo('probanding');
+    document.getElementById('fc-pw-gate').style.display = 'none';
+    document.getElementById('fc-main').style.display = 'flex';
+    fcRenderDeckBar();
+    fcUpdateHero();
+    fcSwitchTab('versus');
+    vsOpenWaitingForAccept(saved);
+  } catch (e) {
+    alert('No se pudo crear la partida: ' + e.message);
+  }
 }
 
 function vsStartHomePolling() {
