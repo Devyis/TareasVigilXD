@@ -3371,7 +3371,8 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
         <div class="fc-section-header">📥 Importar CSV</div>
         <div class="fc-csv-section">
           <div class="fc-csv-hint">
-            Formato: <code>pregunta,respuesta</code> (una por línea). Sin encabezado. Las comillas son opcionales.
+            Formato simple: <code>pregunta,respuesta</code> (una por línea, sin encabezado).<br>
+            Formato Versus (recomendado): <code>pregunta,respuesta,distractor1,distractor2,distractor3</code> — con este formato el modo ⚔️ Versus usa esos 3 distractores diseñados para esa pregunta en vez de armarlos al azar con respuestas de otras tarjetas, así son más difíciles de adivinar. Las comillas son opcionales.
           </div>
           <label class="fc-csv-drop-label">
             📂 Elegir archivo CSV
@@ -6169,12 +6170,31 @@ function fcHandleCsv(input) {
   reader.readAsText(file, 'UTF-8');
 }
 
+// Soporta 2 formatos de CSV:
+//  · Formato clásico (2 columnas):  pregunta,respuesta
+//    → se guarda { q, a }. El Versus arma distractores automáticos (aleatorios) al jugar.
+//  · Formato "versus" (5 columnas): pregunta,respuesta,distractor1,distractor2,distractor3
+//    → se guarda { q, a, distractors:[d1,d2,d3] }. El Versus usa ESOS distractores directamente
+//      (curados a mano para esa pregunta puntual), en vez de sacar respuestas de otras tarjetas
+//      al azar. Esto evita que las opciones incorrectas se noten por ser de otro tema.
+//    Ideal para pegar el CSV que te genera Claude cuando le pedís distractores para un mazo.
 function fcParseCsv(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   const results = [];
   for (const line of lines) {
     const cols = fcSplitCsvLine(line);
-    if (cols.length >= 2) {
+    if (cols.length >= 5) {
+      // Formato versus: pregunta, respuesta, distractor1, distractor2, distractor3
+      const q = cols[0].trim();
+      const a = cols[1].trim();
+      const distractors = [cols[2].trim(), cols[3].trim(), cols[4].trim()].filter(Boolean);
+      if (q && a && distractors.length === 3) {
+        results.push({ q, a, distractors });
+      } else if (q && a) {
+        results.push({ q, a }); // faltaba algún distractor: se guarda sin ellos (fallback automático)
+      }
+    } else if (cols.length >= 2) {
+      // Formato clásico: pregunta, respuesta
       const q = cols[0].trim();
       const a = cols.slice(1).join(',').trim();
       if (q && a) results.push({ q, a });
@@ -6412,6 +6432,16 @@ function vsUserInfo(username) {
 }
 
 // ── Build 10 multiple-choice questions from the active deck ──
+//
+// Prioridad de distractores por tarjeta:
+//   1) Si la tarjeta trae distractors:[d1,d2,d3] curados (importados vía CSV de 5 columnas,
+//      o generados a mano/con IA para esa pregunta puntual) → se usan tal cual. Son la
+//      mejor opción porque están pensados específicamente para esa pregunta, del mismo
+//      tema y con longitud/estilo parecido a la respuesta correcta: no se notan a simple vista.
+//   2) Si la tarjeta NO trae distractores curados (mazos viejos o tarjetas sueltas agregadas
+//      a mano) → fallback al método anterior: tomar respuestas de otras tarjetas del mazo al
+//      azar. Es peor (puede notarse por tema/formato) pero garantiza que el juego funcione
+//      igual con cualquier mazo, aunque no tenga distractores diseñados.
 function vsBuildQuestions() {
   const cards = fcGetCards();
   if (cards.length < 4) return null; // need at least 4 for distractors
@@ -6422,15 +6452,24 @@ function vsBuildQuestions() {
   }
   const picked = shuffled.slice(0, Math.min(VS_QUESTION_COUNT, shuffled.length));
   return picked.map(card => {
-    const pool = cards.filter(c => c !== card && c.a.trim() !== card.a.trim());
-    const distractors = [];
-    const poolCopy = [...pool];
-    while (distractors.length < 3 && poolCopy.length) {
-      const idx = Math.floor(Math.random() * poolCopy.length);
-      distractors.push(poolCopy.splice(idx, 1)[0].a);
+    let distractors;
+
+    if (Array.isArray(card.distractors) && card.distractors.length === 3) {
+      // 1) Distractores curados para esta pregunta puntual
+      distractors = [...card.distractors];
+    } else {
+      // 2) Fallback: distractores aleatorios de otras tarjetas del mazo (comportamiento anterior)
+      const pool = cards.filter(c => c !== card && c.a.trim() !== card.a.trim());
+      distractors = [];
+      const poolCopy = [...pool];
+      while (distractors.length < 3 && poolCopy.length) {
+        const idx = Math.floor(Math.random() * poolCopy.length);
+        distractors.push(poolCopy.splice(idx, 1)[0].a);
+      }
+      // Pad with placeholder distractors if the deck is too small/homogeneous
+      while (distractors.length < 3) distractors.push('— (sin datos) —');
     }
-    // Pad with placeholder distractors if the deck is too small/homogeneous
-    while (distractors.length < 3) distractors.push('— (sin datos) —');
+
     const options = [card.a, ...distractors];
     for (let i = options.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
