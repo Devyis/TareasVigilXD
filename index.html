@@ -6181,8 +6181,12 @@ function fcHandleCsv(input) {
 function fcParseCsv(text) {
   const lines = text.split(/\r?\n/).filter(l => l.trim());
   const results = [];
-  for (const line of lines) {
+  for (const [i, line] of lines.entries()) {
     const cols = fcSplitCsvLine(line);
+
+    // Saltear la fila de encabezado si viene incluida (ej. "pregunta,correcta,distractor1,...")
+    if (i === 0 && fcLooksLikeCsvHeader(cols)) continue;
+
     if (cols.length >= 5) {
       // Formato versus: pregunta, respuesta, distractor1, distractor2, distractor3
       const q = cols[0].trim();
@@ -6201,6 +6205,18 @@ function fcParseCsv(text) {
     }
   }
   return results;
+}
+
+// Detecta si la primera fila es un encabezado (nombres de columna) y no una tarjeta real.
+// Compara, sin mayúsculas/acentos, contra los nombres de columna esperados.
+function fcLooksLikeCsvHeader(cols) {
+  if (!cols.length) return false;
+  const norm = s => (s || '').trim().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // saca acentos
+  const headerWords = new Set(['pregunta', 'respuesta', 'correcta', 'distractor1', 'distractor2', 'distractor3', 'distractor 1', 'distractor 2', 'distractor 3']);
+  const first = norm(cols[0]);
+  const second = norm(cols[1] || '');
+  return headerWords.has(first) && (cols.length < 2 || headerWords.has(second));
 }
 
 function fcSplitCsvLine(line) {
