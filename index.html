@@ -5188,6 +5188,7 @@ function checkPw() {
     document.getElementById('admin-btn').classList.add('active');
     document.getElementById('admin-btn').textContent = '✓ admin';
     updateChatAdminButton();
+    renderPersonalSection();
     closePwModal();
   } else {
     document.getElementById('pw-error').classList.add('show');
@@ -5202,6 +5203,7 @@ function disableAdmin() {
   document.getElementById('admin-btn').classList.remove('active');
   document.getElementById('admin-btn').textContent = '⚙ admin';
   updateChatAdminButton();
+  renderPersonalSection();
 }
 
 // ═══════════════════════════════════════════
@@ -5634,6 +5636,38 @@ function renderPersonalSection() {
       }).join('');
 // ✅ FIN DEL CAMBIO
 
+  // Vencidas que el usuario NO hizo o no entregó (van debajo de Pendientes)
+  const missed = expired.filter(t => !t.done).sort((a, b) => new Date(b.deadline) - new Date(a.deadline));
+
+  const missedHTML = missed.length === 0 ? '' : `
+    <div style="margin-top:0.9rem;padding-top:0.8rem;border-top:1px dashed rgba(255,255,255,0.15);">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+        <div style="font-family:'Caveat',cursive;font-size:1.15rem;font-weight:700;color:#ff8787;display:flex;align-items:center;gap:0.4rem;">
+          📛 No hiciste (vencidas)
+        </div>
+        ${isAdmin ? `<button class="btn-cancel" id="missed-delete-btn" style="display:none;border:2px solid var(--red);color:var(--red);font-weight:800;padding:0.3rem 0.7rem;font-size:0.72rem;" onclick="deleteSelectedMissedTasks()">🗑 Eliminar seleccionadas</button>` : ''}
+      </div>
+      <div>${missed.map(t => {
+        const d = Math.abs(daysLeft(t.deadline));
+        const statusBadge = (t.state && t.state.hecho && !t.state.entregado)
+          ? `<span class="personal-done-badge" style="color:#e67700;border-color:#e67700;background:#fff3e0">⚠️ No entregada</span>`
+          : `<span class="personal-done-badge" style="color:var(--red);border-color:var(--red);background:var(--red-light)">✗ No hecha</span>`;
+        const checkbox = isAdmin
+          ? `<input type="checkbox" class="missed-del-checkbox" data-cid="${t.courseId}" data-tid="${t.id}" onclick="event.stopPropagation();updateMissedDeleteBtn();" style="width:18px;height:18px;flex-shrink:0;margin-right:0.6rem;cursor:pointer;">`
+          : '';
+        return `<div class="personal-task-item" style="display:flex;align-items:center;opacity:0.85;" onclick="${isAdmin ? '' : `openQTaskPopup('${t.courseId}',${t.id})`}">
+          ${checkbox}
+          <div class="personal-task-info" ${isAdmin ? `style="cursor:pointer;" onclick="openQTaskPopup('${t.courseId}',${t.id})"` : ''}>
+            <div class="personal-task-name">${catIcon(t.categoria)} ${t.name}</div>
+            <div class="personal-task-meta">
+              ${t.courseIcon} ${t.courseName} · 📅 ${fmtDate(t.deadline)} · hace ${d} día${d !== 1 ? 's' : ''}
+              ${statusBadge}
+            </div>
+          </div>
+        </div>`;
+      }).join('')}</div>
+    </div>`;
+
   container.innerHTML = `
     <div class="personal-section">
       <div class="personal-header" style="align-items:flex-start;">
@@ -5665,12 +5699,40 @@ function renderPersonalSection() {
               </button>` : ''}
             </div>
             <div>${itemsHTML}</div>
+            ${missedHTML}
           </div>
 
         </div>
         <button class="personal-logout-btn" onclick="logoutUser()" style="flex-shrink:0;margin-left:0.5rem;">Salir</button>
       </div>
     </div>`;
+}
+
+function updateMissedDeleteBtn() {
+  const delBtn = document.getElementById('missed-delete-btn');
+  if (!delBtn) return;
+  const checked = document.querySelectorAll('.missed-del-checkbox:checked').length;
+  delBtn.style.display = checked > 0 ? 'inline-block' : 'none';
+  delBtn.textContent = checked > 0 ? `🗑 Eliminar seleccionadas (${checked})` : '🗑 Eliminar seleccionadas';
+}
+
+async function deleteSelectedMissedTasks() {
+  if (!isAdmin) return;
+  const boxes = Array.from(document.querySelectorAll('.missed-del-checkbox:checked'));
+  if (!boxes.length) return;
+  if (!confirm(`¿Eliminar ${boxes.length} tarea${boxes.length !== 1 ? 's' : ''} seleccionada${boxes.length !== 1 ? 's' : ''}? Esta acción no se puede deshacer.`)) return;
+
+  for (const box of boxes) {
+    const cid = box.getAttribute('data-cid');
+    const tid = Number(box.getAttribute('data-tid'));
+    try {
+      await dbDeleteTask(tid);
+      if (tasks[cid]) tasks[cid] = tasks[cid].filter(x => x.id !== tid);
+    } catch (e) {
+      console.error('No se pudo eliminar tarea', tid, e);
+    }
+  }
+  renderHome();
 }
 
 function openPersonalTaskModal(cid, tid) {
