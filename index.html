@@ -3159,6 +3159,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   </div>
  <div id="home-banner-container"></div>
   <div id="ticker-wrap-container"></div>        <!-- ← ticker PRIMERO -->
+  <div id="home-missed-tasks-container"></div>   <!-- ← Tareas vencidas no entregadas (solo logueados) -->
   <div id="home-versus-section-container"></div>  <!-- ← Apartado Versus (solo logueados) -->
   <div id="vs-invites-container"></div>
   <div id="personal-section-container"></div>
@@ -4402,6 +4403,8 @@ function renderHome() {
       </div>`;
   }
 
+  renderHomeMissedTasksSection(allTasks);
+
   document.getElementById('courses-list').innerHTML = COURSES.map(c => {
     const ct = (tasks[c.id] || []).filter(t => !isTaskExpired(t));
     const hasUrgentTasks = ct.length > 0 && Math.min(...ct.map(t => daysLeft(t.deadline))) <= 1;
@@ -4445,6 +4448,81 @@ function renderHome() {
 function openTaskFromTicker(cid, tid) {
   activeCourseId = cid;
   openTask(cid, tid);
+}
+
+// ═══════════════════════════════════════════
+// TAREAS VENCIDAS SIN ENTREGAR (debajo de Pendientes, solo logueados)
+// Muestra, en la home, las tareas ya vencidas que el usuario NO marcó
+// como hecho + entregado. Incluye botón para limpiar (borrar) vencidas.
+// ═══════════════════════════════════════════
+function getMissedTasks() {
+  if (!currentUser) return [];
+  const missed = [];
+  for (const cid in tasks) {
+    (tasks[cid] || []).forEach(t => {
+      if (!isTaskExpired(t)) return;
+      const st = _personalStates[t.id] || { hecho: false, entregado: false };
+      if (st.hecho && st.entregado) return; // esa sí la cumplió, no cuenta como "no hecha"
+      const c = COURSES.find(x => x.id === cid);
+      missed.push({ ...t, courseIcon: c ? c.icon : '📚', courseName: c ? c.name : cid, courseId: cid });
+    });
+  }
+  missed.sort((a, b) => new Date(b.deadline) - new Date(a.deadline));
+  return missed;
+}
+
+function renderHomeMissedTasksSection() {
+  const container = document.getElementById('home-missed-tasks-container');
+  if (!container) return;
+  if (!currentUser) { container.innerHTML = ''; return; }
+
+  const missed = getMissedTasks();
+  if (!missed.length) { container.innerHTML = ''; return; }
+
+  const items = missed.map(t => {
+    const st = _personalStates[t.id] || { hecho: false, entregado: false };
+    let statusBadge;
+    if (st.hecho && !st.entregado) {
+      statusBadge = `<span class="personal-done-badge" style="color:#e67700;border-color:#e67700;background:#fff3e0">⚠️ No entregada</span>`;
+    } else {
+      statusBadge = `<span class="personal-done-badge" style="color:var(--red);border-color:var(--red);background:var(--red-light)">✗ No hecha</span>`;
+    }
+    return `
+      <div class="past-task-item" style="display:flex;align-items:center;gap:0.5rem;">
+        <div class="past-task-item-content" style="cursor:pointer;" onclick="openTaskFromTicker('${t.courseId}',${t.id})">
+          <div class="past-task-item-name">${catIcon(t.categoria)} ${escHtml(t.name)}</div>
+          <div class="past-task-item-meta">${t.courseIcon} ${escHtml(t.courseName)} · 📅 ${fmtDate(t.deadline)} ${statusBadge}</div>
+        </div>
+        ${isAdmin ? `<button class="task-delete-btn" title="Eliminar esta tarea" onclick="event.stopPropagation(); deleteTask(event,'${t.courseId}',${t.id});">🗑</button>` : ''}
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="ticker-wrap" style="margin:0.8rem 1.2rem 0; display:block; padding:0.8rem 1rem;">
+      <div class="ticker-label" style="margin-bottom:0.5rem;">📛 Tareas vencidas sin entregar (${missed.length})</div>
+      <div>${items}</div>
+      ${isAdmin ? `
+      <button class="qtask-cancel" style="width:100%;margin-top:0.5rem;border:2px solid var(--red);color:var(--red);border-radius:10px;font-weight:800;padding:0.55rem;" onclick="bulkDeleteMissedTasks()">
+        🗑 Eliminar tareas vencidas
+      </button>` : ''}
+    </div>`;
+}
+
+async function bulkDeleteMissedTasks() {
+  if (!isAdmin) return;
+  const missed = getMissedTasks();
+  if (!missed.length) return;
+  if (!confirm(`Vas a eliminar ${missed.length} tarea${missed.length !== 1 ? 's' : ''} vencida${missed.length !== 1 ? 's' : ''} (irrelevantes o duplicadas). Esta acción no se puede deshacer. ¿Continuar?`)) return;
+
+  for (const t of missed) {
+    try {
+      await dbDeleteTask(t.id);
+      if (tasks[t.courseId]) tasks[t.courseId] = tasks[t.courseId].filter(x => x.id !== t.id);
+    } catch (e) {
+      console.error('No se pudo eliminar tarea', t.id, e);
+    }
+  }
+  renderHome();
 }
 
 function togglePillDropdown(e, type) {
@@ -5187,6 +5265,7 @@ function checkPw() {
     document.getElementById('admin-btn').classList.add('active');
     document.getElementById('admin-btn').textContent = '✓ admin';
     updateChatAdminButton();
+    renderHomeMissedTasksSection();
     closePwModal();
   } else {
     document.getElementById('pw-error').classList.add('show');
@@ -5201,6 +5280,7 @@ function disableAdmin() {
   document.getElementById('admin-btn').classList.remove('active');
   document.getElementById('admin-btn').textContent = '⚙ admin';
   updateChatAdminButton();
+  renderHomeMissedTasksSection();
 }
 
 // ═══════════════════════════════════════════
@@ -5527,6 +5607,8 @@ function logoutUser() {
   if (vsContainer) vsContainer.innerHTML = '';
   const homeVsContainer = document.getElementById('home-versus-section-container');
   if (homeVsContainer) homeVsContainer.innerHTML = '';
+  const homeMissedContainer = document.getElementById('home-missed-tasks-container');
+  if (homeMissedContainer) homeMissedContainer.innerHTML = '';
   stopChatPolling();
   const chatContainer = document.getElementById('chat-section-container');
   if (chatContainer) chatContainer.innerHTML = '';
