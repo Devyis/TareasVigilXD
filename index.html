@@ -7796,8 +7796,16 @@ async function recolectarItemsParaPriorizar() {
   const items = [];
   for (const cid in tasks) {
     for (const t of (tasks[cid] || [])) {
-      if (isTaskExpired(t)) continue;
       if (!t.pdfs || !t.pdfs.tarea || t.pdfs.tarea.length === 0) continue; // solo con PDF de tarea
+
+      const expirada = isTaskExpired(t);
+      const st = _personalStates[t.id] || { hecho: false, entregado: false };
+      const completada = st.hecho && st.entregado;
+
+      // Se descarta solo si: no está vencida Y ya está completada.
+      // Si está vencida y no completada, se incluye igual (para poder entregarla tarde).
+      if (!expirada && completada) continue;
+      if (expirada && completada) continue; // vencida pero ya entregada -> no aporta
 
       let contenido = '';
       for (const pdfPath of t.pdfs.tarea) {
@@ -7806,10 +7814,14 @@ async function recolectarItemsParaPriorizar() {
       }
       if (!contenido.trim()) continue; // si no se pudo extraer nada, se salta
 
+      const dias = daysLeft(t.deadline); // negativo si ya venció
+
       items.push({
         nombre: t.name || '(sin nombre)',
         tipo: (t.categoria === 'examen') ? 'examen' : 'tarea',
-        dias_restantes: daysLeft(t.deadline),
+        dias_restantes: dias,
+        vencida: expirada,
+        dias_vencida: expirada ? Math.abs(dias) : 0,
         contenido: contenido.slice(0, 6000),
       });
     }
@@ -7861,14 +7873,18 @@ function renderResultadoPriorizacion(data) {
     const it = itemsByName[nombre];
     if (!it) return;
     const compColor = it.complejidad === 'alta' ? 'var(--red)' : (it.complejidad === 'media' ? 'var(--orange)' : 'var(--green)');
+    const borderColor = it.vencida ? 'var(--red)' : 'var(--line)';
+    const diasTexto = it.vencida
+      ? `⚠ vencida hace ${it.dias_vencida} día${it.dias_vencida !== 1 ? 's' : ''}`
+      : `📅 ${it.dias_restantes} día${it.dias_restantes !== 1 ? 's' : ''} restante${it.dias_restantes !== 1 ? 's' : ''}`;
     html += `
-      <div style="border:2px solid var(--line);border-radius:12px;padding:0.8rem;margin-bottom:0.6rem;background:var(--paper2);">
+      <div style="border:2px solid ${borderColor};border-radius:12px;padding:0.8rem;margin-bottom:0.6rem;background:var(--paper2);">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-          <strong style="font-size:0.85rem;">${idx + 1}. ${it.nombre}</strong>
+          <strong style="font-size:0.85rem;">${idx + 1}. ${it.vencida ? '⚠ ' : ''}${it.nombre}</strong>
           <span style="font-size:0.65rem;color:${compColor};font-weight:700;text-transform:uppercase;">${it.complejidad}</span>
         </div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">
-          ⏱ ${it.tiempo_estimado} · 📅 ${it.dias_restantes} día${it.dias_restantes !== 1 ? 's' : ''} restante${it.dias_restantes !== 1 ? 's' : ''} · ${it.tipo === 'examen' ? '📝 examen' : '📋 tarea'}
+        <div style="font-size:0.72rem;color:${it.vencida ? 'var(--red)' : 'var(--muted)'};margin-top:0.3rem;font-weight:${it.vencida ? '700' : '400'};">
+          ⏱ ${it.tiempo_estimado} · ${diasTexto} · ${it.tipo === 'examen' ? '📝 examen' : '📋 tarea'}
         </div>
         <div style="font-size:0.75rem;margin-top:0.4rem;">${it.razon}</div>
       </div>`;
