@@ -7791,24 +7791,26 @@ async function extraerTextoPDF(path) {
   }
 }
 
-// Recolecta solo las tareas pendientes que tengan PDF en pdfs.tarea
+// Recolecta tareas/exámenes pendientes o vencidos-no-completados.
+// Para TAREAS normales: usa el PDF de pdfs.tarea.
+// Para EXÁMENES: usa el PDF de pdfs.teoria (es lo que hay que estudiar/memorizar).
 async function recolectarItemsParaPriorizar() {
   const items = [];
   for (const cid in tasks) {
     for (const t of (tasks[cid] || [])) {
-      if (!t.pdfs || !t.pdfs.tarea || t.pdfs.tarea.length === 0) continue; // solo con PDF de tarea
+      const esExamen = t.categoria === 'examen';
+      const pdfsFuente = esExamen ? (t.pdfs && t.pdfs.teoria) : (t.pdfs && t.pdfs.tarea);
+
+      if (!pdfsFuente || pdfsFuente.length === 0) continue; // sin PDF relevante para su tipo, se salta
 
       const expirada = isTaskExpired(t);
       const st = _personalStates[t.id] || { hecho: false, entregado: false };
       const completada = st.hecho && st.entregado;
 
-      // Se descarta solo si: no está vencida Y ya está completada.
-      // Si está vencida y no completada, se incluye igual (para poder entregarla tarde).
-      if (!expirada && completada) continue;
-      if (expirada && completada) continue; // vencida pero ya entregada -> no aporta
+      if (completada) continue; // completada (a tiempo o tarde) -> ya no aporta
 
       let contenido = '';
-      for (const pdfPath of t.pdfs.tarea) {
+      for (const pdfPath of pdfsFuente) {
         const texto = await extraerTextoPDF(pdfPath);
         if (texto) contenido += texto + '\n';
       }
@@ -7818,7 +7820,7 @@ async function recolectarItemsParaPriorizar() {
 
       items.push({
         nombre: t.name || '(sin nombre)',
-        tipo: (t.categoria === 'examen') ? 'examen' : 'tarea',
+        tipo: esExamen ? 'examen' : 'tarea',
         dias_restantes: dias,
         vencida: expirada,
         dias_vencida: expirada ? Math.abs(dias) : 0,
@@ -7831,47 +7833,77 @@ async function recolectarItemsParaPriorizar() {
 
 async function ejecutarPriorizacion() {
   const contentEl = document.getElementById('priorizar-content');
-  contentEl.innerHTML = `<div style="text-align:center;padding:1.5rem 0;color:var(--muted);font-size:0.85rem;">⏳ Extrayendo PDFs y consultando...</div>`;
+  contentEl.innerHTML = `<div style="text-align:center;padding:1.5rem 0;color:var(--muted);font-size:0.85rem;">⏳ Extrayendo PDFs...</div>`;
 
   try {
     const items = await recolectarItemsParaPriorizar();
 
     if (items.length === 0) {
-      contentEl.innerHTML = `<div style="text-align:center;padding:1rem 0;color:var(--muted);font-size:0.85rem;">No hay tareas pendientes con PDF de tarea cargado.</div>`;
+      contentEl.innerHTML = `<div style="text-align:center;padding:1rem 0;color:var(--muted);font-size:0.85rem;">No hay tareas/exámenes pendientes con PDF cargado.</div>`;
       return;
     }
 
-    const res = await fetch(PRIORIZAR_FN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items }),
-    });
+    const resultados = [];
+    for (let i = 0; i < items.length; i++) {
+      contentEl.innerHTML = `<div style="text-align:center;padding:1.5rem 0;color:var(--muted);font-size:0.85rem;">⏳ Analizando ${i + 1} de ${items.length}: ${items[i].nombre}...</div>`;
 
-    const data = await res.json();
+      try {
+        const res = await fetch(PRIORIZAR_FN_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            item: { nombre: items[i].nombre, tipo: items[i].tipo, contenido: items[i].contenido },
+          }),
+        });
+        const data = await res.json();
 
-    if (!res.ok || data.error) {
-      contentEl.innerHTML = `<div style="color:var(--red);font-size:0.85rem;">Error: ${data.error || 'algo falló'}</div>
-        <button class="topbar-action" style="width:100%;display:block;text-align:center;margin-top:0.8rem" onclick="ejecutarPriorizacion()">Reintentar</button>`;
-      return;
+        if (!res.ok || data.error) {
+          resultados.push({ ...items[i], tiempo_estimado: 'no disponible', complejidad: 'media', razon: `⚠ no se pudo analizar (${data.error || 'error'})` });
+        } else {
+          resultados.push({ ...items[i], tiempo_estimado: data.tiempo_estimado, complejidad: data.complejidad, razon: data.razon });
+        }
+      } catch (e) {
+        resultados.push({ ...items[i], tiempo_estimado: 'no disponible', complejidad: 'media', razon: `⚠ error de red` });
+      }
     }
 
-    renderResultadoPriorizacion(data);
+    renderResultadoPriorizacion(ordenarPorPrioridad(resultados));
   } catch (e) {
     contentEl.innerHTML = `<div style="color:var(--red);font-size:0.85rem;">Error: ${e.message}</div>
       <button class="topbar-action" style="width:100%;display:block;text-align:center;margin-top:0.8rem" onclick="ejecutarPriorizacion()">Reintentar</button>`;
   }
 }
 
-function renderResultadoPriorizacion(data) {
+// Orden final calculado en el propio código (fórmula fija, no a criterio de Groq):
+// 1) Las vencidas SIEMPRE primero, ordenadas por más atrasada.
+// 2) El resto ordenado por puntaje = peso_urgencia + peso_complejidad.
+function ordenarPorPrioridad(items) {
+  const pesoUrgencia = (dias) => {
+    if (dias <= 1) return 10;
+    if (dias <= 3) return 6;
+    if (dias <= 6) return 3;
+    return 1;
+  };
+  const pesoComplejidad = (c) => (c === 'alta' ? 5 : c === 'media' ? 3 : 1);
+
+  const vencidas = items
+    .filter(it => it.vencida)
+    .sort((a, b) => b.dias_vencida - a.dias_vencida);
+
+  const pendientes = items
+    .filter(it => !it.vencida)
+    .map(it => ({ ...it, _score: pesoUrgencia(it.dias_restantes) + pesoComplejidad(it.complejidad) }))
+    .sort((a, b) => b._score - a._score);
+
+  return [...vencidas, ...pendientes];
+}
+
+function renderResultadoPriorizacion(itemsOrdenados) {
   const contentEl = document.getElementById('priorizar-content');
-  const itemsByName = {};
-  (data.items || []).forEach(it => itemsByName[it.nombre] = it);
 
-  let html = `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem;font-style:italic;">${data.justificacion_orden || ''}</div>`;
+  let html = `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem;font-style:italic;">Las tareas vencidas van siempre primero. El resto se ordena por urgencia + dificultad.</div>`;
 
-  (data.orden_recomendado || []).forEach((nombre, idx) => {
-    const it = itemsByName[nombre];
-    if (!it) return;
+  itemsOrdenados.forEach((it, idx) => {
     const compColor = it.complejidad === 'alta' ? 'var(--red)' : (it.complejidad === 'media' ? 'var(--orange)' : 'var(--green)');
     const borderColor = it.vencida ? 'var(--red)' : 'var(--line)';
     const diasTexto = it.vencida
@@ -7884,7 +7916,7 @@ function renderResultadoPriorizacion(data) {
           <span style="font-size:0.65rem;color:${compColor};font-weight:700;text-transform:uppercase;">${it.complejidad}</span>
         </div>
         <div style="font-size:0.72rem;color:${it.vencida ? 'var(--red)' : 'var(--muted)'};margin-top:0.3rem;font-weight:${it.vencida ? '700' : '400'};">
-          ⏱ ${it.tiempo_estimado} · ${diasTexto} · ${it.tipo === 'examen' ? '📝 examen' : '📋 tarea'}
+          ⏱ ${it.tiempo_estimado} · ${diasTexto} · ${it.tipo === 'examen' ? '📝 examen (teoría)' : '📋 tarea'}
         </div>
         <div style="font-size:0.75rem;margin-top:0.4rem;">${it.razon}</div>
       </div>`;
