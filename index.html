@@ -3153,6 +3153,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
         <button class="admin-btn-home" id="home-past-tasks-btn" onclick="openHomePastTasksModal()" title="Ver tareas pasadas">🗂️ pasadas</button>
         <button class="admin-btn-home" id="chat-toggle-admin-btn" onclick="toggleChatEnabled()" title="Activar/desactivar chat" style="display:none;">💬 chat</button>
         <button class="admin-btn-home" id="admin-btn" onclick="openPwModal()">⚙ admin</button>
+        <button class="admin-btn-home" id="priorizar-btn" onclick="abrirModalPriorizar()" style="display:none;">🤖 priorizar</button>
       </div>
     </div>
     <div class="home-stats" id="home-stats"></div>
@@ -5187,6 +5188,7 @@ function checkPw() {
     document.body.classList.add('admin-mode');
     document.getElementById('admin-btn').classList.add('active');
     document.getElementById('admin-btn').textContent = '✓ admin';
+    document.getElementById('priorizar-btn').style.display = 'block';
     updateChatAdminButton();
     renderPersonalSection();
     closePwModal();
@@ -5202,6 +5204,7 @@ function disableAdmin() {
   document.body.classList.remove('admin-mode');
   document.getElementById('admin-btn').classList.remove('active');
   document.getElementById('admin-btn').textContent = '⚙ admin';
+  document.getElementById('priorizar-btn').style.display = 'none';
   updateChatAdminButton();
   renderPersonalSection();
 }
@@ -7735,5 +7738,146 @@ function vsStartHomePolling() {
 init();
 vsStartHomePolling();
 </script>
+<!-- MODAL PRIORIZAR TAREAS (solo admin) -->
+<div class="modal-overlay" id="priorizar-modal-overlay" onclick="if(event.target===this) cerrarModalPriorizar()">
+  <div class="modal-sheet" style="max-width:480px;max-height:80vh;overflow-y:auto;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🤖 ¿Qué hago primero?</div>
+    <div style="font-size:0.75rem;color:var(--muted);margin:-0.3rem 0 0.9rem">
+      Analiza las tareas pendientes que tengan PDF de tarea cargado y sugiere un orden.
+    </div>
+    <div id="priorizar-content">
+      <button class="topbar-action" style="width:100%;display:block;text-align:center" onclick="ejecutarPriorizacion()">▶ Analizar tareas pendientes</button>
+    </div>
+    <button class="qtask-cancel" style="width:100%;margin-top:0.8rem" onclick="cerrarModalPriorizar()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// PRIORIZAR TAREAS CON GROQ (solo admin)
+// ═══════════════════════════════════════════
+const PRIORIZAR_FN_URL = `${SUPABASE_URL}/functions/v1/priorizar-tareas`;
+
+function abrirModalPriorizar() {
+  if (!isAdmin) return;
+  document.getElementById('priorizar-content').innerHTML =
+    `<button class="topbar-action" style="width:100%;display:block;text-align:center" onclick="ejecutarPriorizacion()">▶ Analizar tareas pendientes</button>`;
+  document.getElementById('priorizar-modal-overlay').classList.add('open');
+}
+
+function cerrarModalPriorizar() {
+  document.getElementById('priorizar-modal-overlay').classList.remove('open');
+}
+
+// Extrae el texto de un PDF dado su path en el bucket, usando pdf.js
+async function extraerTextoPDF(path) {
+  try {
+    const url = publicUrl(path);
+    const res = await fetch(url);
+    const buf = await res.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let texto = '';
+    const maxPaginas = Math.min(pdf.numPages, 15); // límite razonable
+    for (let i = 1; i <= maxPaginas; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      texto += content.items.map(it => it.str).join(' ') + '\n';
+    }
+    return texto.trim().slice(0, 6000); // recorte para no gastar tokens de más
+  } catch (e) {
+    console.error('Error extrayendo PDF', path, e);
+    return '';
+  }
+}
+
+// Recolecta solo las tareas pendientes que tengan PDF en pdfs.tarea
+async function recolectarItemsParaPriorizar() {
+  const items = [];
+  for (const cid in tasks) {
+    for (const t of (tasks[cid] || [])) {
+      if (isTaskExpired(t)) continue;
+      if (!t.pdfs || !t.pdfs.tarea || t.pdfs.tarea.length === 0) continue; // solo con PDF de tarea
+
+      let contenido = '';
+      for (const pdfPath of t.pdfs.tarea) {
+        const texto = await extraerTextoPDF(pdfPath);
+        if (texto) contenido += texto + '\n';
+      }
+      if (!contenido.trim()) continue; // si no se pudo extraer nada, se salta
+
+      items.push({
+        nombre: t.name || '(sin nombre)',
+        tipo: (t.categoria === 'examen') ? 'examen' : 'tarea',
+        dias_restantes: daysLeft(t.deadline),
+        contenido: contenido.slice(0, 6000),
+      });
+    }
+  }
+  return items;
+}
+
+async function ejecutarPriorizacion() {
+  const contentEl = document.getElementById('priorizar-content');
+  contentEl.innerHTML = `<div style="text-align:center;padding:1.5rem 0;color:var(--muted);font-size:0.85rem;">⏳ Extrayendo PDFs y consultando...</div>`;
+
+  try {
+    const items = await recolectarItemsParaPriorizar();
+
+    if (items.length === 0) {
+      contentEl.innerHTML = `<div style="text-align:center;padding:1rem 0;color:var(--muted);font-size:0.85rem;">No hay tareas pendientes con PDF de tarea cargado.</div>`;
+      return;
+    }
+
+    const res = await fetch(PRIORIZAR_FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.error) {
+      contentEl.innerHTML = `<div style="color:var(--red);font-size:0.85rem;">Error: ${data.error || 'algo falló'}</div>
+        <button class="topbar-action" style="width:100%;display:block;text-align:center;margin-top:0.8rem" onclick="ejecutarPriorizacion()">Reintentar</button>`;
+      return;
+    }
+
+    renderResultadoPriorizacion(data);
+  } catch (e) {
+    contentEl.innerHTML = `<div style="color:var(--red);font-size:0.85rem;">Error: ${e.message}</div>
+      <button class="topbar-action" style="width:100%;display:block;text-align:center;margin-top:0.8rem" onclick="ejecutarPriorizacion()">Reintentar</button>`;
+  }
+}
+
+function renderResultadoPriorizacion(data) {
+  const contentEl = document.getElementById('priorizar-content');
+  const itemsByName = {};
+  (data.items || []).forEach(it => itemsByName[it.nombre] = it);
+
+  let html = `<div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem;font-style:italic;">${data.justificacion_orden || ''}</div>`;
+
+  (data.orden_recomendado || []).forEach((nombre, idx) => {
+    const it = itemsByName[nombre];
+    if (!it) return;
+    const compColor = it.complejidad === 'alta' ? 'var(--red)' : (it.complejidad === 'media' ? 'var(--orange)' : 'var(--green)');
+    html += `
+      <div style="border:2px solid var(--line);border-radius:12px;padding:0.8rem;margin-bottom:0.6rem;background:var(--paper2);">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+          <strong style="font-size:0.85rem;">${idx + 1}. ${it.nombre}</strong>
+          <span style="font-size:0.65rem;color:${compColor};font-weight:700;text-transform:uppercase;">${it.complejidad}</span>
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.3rem;">
+          ⏱ ${it.tiempo_estimado} · 📅 ${it.dias_restantes} día${it.dias_restantes !== 1 ? 's' : ''} restante${it.dias_restantes !== 1 ? 's' : ''} · ${it.tipo === 'examen' ? '📝 examen' : '📋 tarea'}
+        </div>
+        <div style="font-size:0.75rem;margin-top:0.4rem;">${it.razon}</div>
+      </div>`;
+  });
+
+  html += `<button class="topbar-action" style="width:100%;display:block;text-align:center;margin-top:0.4rem" onclick="ejecutarPriorizacion()">🔄 Volver a analizar</button>`;
+  contentEl.innerHTML = html;
+}
+</script>
+
 </body>
 </html>
