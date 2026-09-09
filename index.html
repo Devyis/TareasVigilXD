@@ -3154,6 +3154,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
         <button class="admin-btn-home" id="chat-toggle-admin-btn" onclick="toggleChatEnabled()" title="Activar/desactivar chat" style="display:none;">💬 chat</button>
         <button class="admin-btn-home" id="admin-btn" onclick="openPwModal()">⚙ admin</button>
         <button class="admin-btn-home" id="priorizar-btn" onclick="abrirModalPriorizar()" style="display:none;">🤖 priorizar</button>
+        <button class="admin-btn-home" id="modo-estudio-btn" onclick="abrirModoEstudio()" style="display:none;">📚 estudio</button>
       </div>
     </div>
     <div class="home-stats" id="home-stats"></div>
@@ -5189,6 +5190,7 @@ function checkPw() {
     document.getElementById('admin-btn').classList.add('active');
     document.getElementById('admin-btn').textContent = '✓ admin';
     document.getElementById('priorizar-btn').style.display = 'block';
+    document.getElementById('modo-estudio-btn').style.display = 'block';
     updateChatAdminButton();
     renderPersonalSection();
     closePwModal();
@@ -5205,6 +5207,7 @@ function disableAdmin() {
   document.getElementById('admin-btn').classList.remove('active');
   document.getElementById('admin-btn').textContent = '⚙ admin';
   document.getElementById('priorizar-btn').style.display = 'none';
+  document.getElementById('modo-estudio-btn').style.display = 'none';
   updateChatAdminButton();
   renderPersonalSection();
 }
@@ -7924,6 +7927,707 @@ function renderResultadoPriorizacion(itemsOrdenados) {
 
   html += `<button class="topbar-action" style="width:100%;display:block;text-align:center;margin-top:0.4rem" onclick="ejecutarPriorizacion()">🔄 Volver a analizar</button>`;
   contentEl.innerHTML = html;
+}
+</script>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- MODO ESTUDIO (solo admin por ahora)          -->
+<!-- ═══════════════════════════════════════════ -->
+<style>
+.me-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+  animation: slideIn 0.2s ease;
+}
+.me-overlay.open { display: flex; }
+.me-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 1rem 1.1rem;
+  border-bottom: 2px solid var(--line);
+  background: var(--paper);
+  flex-shrink: 0;
+}
+.me-topbar-title {
+  font-family: 'Caveat', cursive;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--ink);
+  flex: 1;
+}
+.me-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.1rem;
+}
+
+/* Métodos */
+.me-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-width: 420px;
+  margin: 1rem auto 0;
+}
+.me-method-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 1.1rem 1.2rem;
+  border-radius: 16px;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.18s;
+  font-family: 'Nunito', sans-serif;
+}
+.me-method-btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+.me-method-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.me-method-icon { font-size: 1.8rem; flex-shrink: 0; }
+.me-method-text { flex: 1; }
+.me-method-title { font-weight: 800; font-size: 1rem; color: var(--ink); }
+.me-method-sub { font-size: 0.72rem; color: var(--muted); margin-top: 0.15rem; }
+.me-method-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--orange);
+  background: var(--orange-light);
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+
+/* Lista de tareas dentro de modo estudio */
+.me-task-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.8rem 0.9rem;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  margin-bottom: 0.6rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.me-task-item:hover { border-color: var(--accent); }
+.me-task-item-icon { font-size: 1.3rem; flex-shrink: 0; }
+.me-task-item-info { flex: 1; min-width: 0; }
+.me-task-item-name { font-weight: 800; font-size: 0.85rem; color: var(--ink); }
+.me-task-item-meta { font-size: 0.68rem; color: var(--muted); margin-top: 0.1rem; }
+.me-task-item-count {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-light);
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+.me-task-item.disabled { opacity: 0.4; cursor: not-allowed; }
+.me-section-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 1.1rem 0 0.5rem;
+}
+.me-empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  padding: 2rem 1rem;
+}
+
+/* Selección de PDFs */
+.me-pdf-item {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.85rem 0.9rem;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  margin-bottom: 0.6rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.me-pdf-item:hover { border-color: var(--accent); }
+.me-pdf-item.selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.me-pdf-item-icon { font-size: 1.6rem; flex-shrink: 0; }
+.me-pdf-item-info { flex: 1; min-width: 0; }
+.me-pdf-item-name {
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.me-pdf-item-type { font-size: 0.65rem; color: var(--muted); margin-top: 0.1rem; }
+.me-pdf-check {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  border: 2px solid var(--line);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: white;
+  transition: all 0.15s;
+}
+.me-pdf-item.selected .me-pdf-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.me-continue-bar {
+  position: sticky;
+  bottom: 0;
+  background: var(--paper);
+  border-top: 2px solid var(--line);
+  padding: 0.9rem 1.1rem;
+  margin: 1rem -1.1rem -1.1rem;
+}
+.me-continue-btn {
+  width: 100%;
+  padding: 0.9rem;
+  border-radius: 12px;
+  border: none;
+  background: var(--accent);
+  color: white;
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.88rem;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.me-continue-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Pomodoro config modal */
+.me-pomo-config {
+  max-width: 340px;
+  margin: 2rem auto 0;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  padding: 1.4rem;
+}
+.me-pomo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.me-pomo-row label { font-size: 0.85rem; font-weight: 700; color: var(--ink); }
+.me-pomo-row input {
+  width: 80px;
+  padding: 0.5rem;
+  border: 2px solid var(--line);
+  border-radius: 8px;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  text-align: center;
+  background: var(--paper2);
+  color: var(--ink);
+}
+
+/* Pomodoro runner */
+.me-pomo-runner {
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+}
+.me-pomo-timer {
+  font-family: 'Caveat', cursive;
+  font-size: 4.5rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin: 1rem 0 0.2rem;
+  line-height: 1;
+}
+.me-pomo-phase {
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 1.2rem;
+}
+.me-pomo-controls { display: flex; gap: 0.6rem; justify-content: center; margin-bottom: 1.4rem; }
+.me-pomo-controls button {
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+.me-pomo-controls button.primary { background: var(--accent); border-color: var(--accent); color: white; }
+.me-pdf-viewer-list { display: flex; flex-direction: column; gap: 0.8rem; }
+.me-pdf-frame-block { border: 2px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--paper2); }
+.me-pdf-frame-title { padding: 0.6rem 0.9rem; font-weight: 800; font-size: 0.8rem; border-bottom: 2px solid var(--line); background: var(--paper); }
+.me-pdf-frame-block iframe { width: 100%; height: 60vh; border: none; display: block; }
+
+/* Flashcards */
+.me-fc-loading { text-align: center; padding: 3rem 1rem; color: var(--muted); font-size: 0.9rem; }
+.me-fc-card {
+  max-width: 480px;
+  margin: 1rem auto;
+  min-height: 220px;
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  padding: 1.6rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+}
+.me-fc-card-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  margin-bottom: 0.7rem;
+}
+.me-fc-card-text {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.me-fc-card-hint { font-size: 0.68rem; color: var(--muted); margin-top: 1rem; }
+.me-fc-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 480px;
+  margin: 0.8rem auto 0;
+}
+.me-fc-nav button {
+  padding: 0.6rem 1.1rem;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--paper);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+.me-fc-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+.me-fc-counter { font-size: 0.78rem; color: var(--muted); font-weight: 700; min-width: 60px; text-align: center; }
+</style>
+
+<div class="me-overlay" id="me-overlay">
+  <div class="me-topbar">
+    <button class="back-btn" id="me-back-btn" onclick="meGoBack()">←</button>
+    <div class="me-topbar-title" id="me-topbar-title">📚 Modo estudio</div>
+    <button class="back-btn" onclick="cerrarModoEstudio()">✕</button>
+  </div>
+  <div class="me-body" id="me-body"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// MODO ESTUDIO (solo admin por ahora)
+// No toca la base de datos: todo se arma en memoria
+// a partir de `tasks` y `courses` que ya existen.
+// ═══════════════════════════════════════════
+const GENERAR_FLASHCARDS_FN_URL = `${SUPABASE_URL}/functions/v1/generar-flashcards`;
+
+const meState = {
+  step: 'methods',      // 'methods' | 'tasks' | 'pdfs' | 'pomo-config' | 'pomo-run' | 'flashcards'
+  metodo: null,         // 'feynmann' | 'pomodoro' | 'flashcards'
+  activeTask: null,     // { courseId, taskId, task }
+  selectedPdfs: [],     // array de paths seleccionados
+  pomo: { trabajo: 25, descanso: 5 },
+  history: [],          // pila de pasos para el botón "←"
+};
+
+function courseNameOf(cid) {
+  try {
+    if (typeof courses !== 'undefined' && courses[cid] && courses[cid].name) return courses[cid].name;
+  } catch (e) {}
+  return 'Curso';
+}
+
+function abrirModoEstudio() {
+  if (!isAdmin) return;
+  meState.step = 'methods';
+  meState.metodo = null;
+  meState.activeTask = null;
+  meState.selectedPdfs = [];
+  meState.history = [];
+  document.getElementById('me-overlay').classList.add('open');
+  meRender();
+}
+
+function cerrarModoEstudio() {
+  document.getElementById('me-overlay').classList.remove('open');
+  meStopPomodoro();
+}
+
+function meGoBack() {
+  if (meState.history.length === 0) { cerrarModoEstudio(); return; }
+  meState.step = meState.history.pop();
+  if (meState.step === 'methods') { meState.metodo = null; meState.selectedPdfs = []; }
+  if (meState.step === 'tasks') { meState.selectedPdfs = []; }
+  meRender();
+}
+
+function mePushAndGo(nextStep) {
+  meState.history.push(meState.step);
+  meState.step = nextStep;
+  meRender();
+}
+
+function meRender() {
+  const titles = {
+    methods: '📚 Modo estudio',
+    tasks: '📚 Elegí una tarea',
+    pdfs: '📄 Elegí el/los PDF',
+    'pomo-config': '⏱ Configurar pomodoro',
+    'pomo-run': '⏱ Pomodoro',
+    flashcards: '🧠 Flashcards',
+  };
+  document.getElementById('me-topbar-title').textContent = titles[meState.step] || '📚 Modo estudio';
+  document.getElementById('me-back-btn').style.visibility = meState.history.length ? 'visible' : 'hidden';
+
+  const body = document.getElementById('me-body');
+  if (meState.step === 'methods') return meRenderMethods(body);
+  if (meState.step === 'tasks') return meRenderTasks(body);
+  if (meState.step === 'pdfs') return meRenderPdfs(body);
+  if (meState.step === 'pomo-config') return meRenderPomoConfig(body);
+  if (meState.step === 'pomo-run') return meRenderPomoRun(body);
+  if (meState.step === 'flashcards') return meRenderFlashcards(body);
+}
+
+// ── PASO 1: métodos ──
+function meRenderMethods(body) {
+  body.innerHTML = `
+    <div class="me-methods">
+      <button class="me-method-btn" disabled title="Próximamente">
+        <span class="me-method-icon">🧑‍🏫</span>
+        <div class="me-method-text">
+          <div class="me-method-title">Técnica Feynmann</div>
+          <div class="me-method-sub">Explicá el tema con tus palabras</div>
+        </div>
+        <span class="me-method-badge">Próximamente</span>
+      </button>
+      <button class="me-method-btn" onclick="meSelectMetodo('pomodoro')">
+        <span class="me-method-icon">🍅</span>
+        <div class="me-method-text">
+          <div class="me-method-title">Pomodoro</div>
+          <div class="me-method-sub">Leé el PDF con un timer de trabajo/descanso</div>
+        </div>
+      </button>
+      <button class="me-method-btn" onclick="meSelectMetodo('flashcards')">
+        <span class="me-method-icon">🧠</span>
+        <div class="me-method-text">
+          <div class="me-method-title">Flashcards con IA</div>
+          <div class="me-method-sub">Generá tarjetas de estudio del PDF con IA</div>
+        </div>
+      </button>
+    </div>`;
+}
+
+function meSelectMetodo(metodo) {
+  meState.metodo = metodo;
+  mePushAndGo('tasks');
+}
+
+// ── PASO 2: lista de tareas (actuales y pasadas, sin filtrar) ──
+function meCollectAllTasks() {
+  const items = [];
+  for (const cid in tasks) {
+    for (const t of (tasks[cid] || [])) {
+      const teoria = (t.pdfs && t.pdfs.teoria) || [];
+      items.push({ courseId: cid, task: t, teoriaCount: teoria.length });
+    }
+  }
+  // más recientes primero por deadline
+  items.sort((a, b) => new Date(b.task.deadline) - new Date(a.task.deadline));
+  return items;
+}
+
+function meRenderTasks(body) {
+  const items = meCollectAllTasks();
+  if (items.length === 0) {
+    body.innerHTML = `<div class="me-empty">No hay tareas cargadas todavía.</div>`;
+    return;
+  }
+  let html = `<div class="me-section-label">Todas las tareas (con PDF de teoría)</div>`;
+  items.forEach(it => {
+    const disabled = it.teoriaCount === 0;
+    html += `
+      <div class="me-task-item ${disabled ? 'disabled' : ''}" ${disabled ? '' : `onclick="meSelectTask('${it.courseId}', ${it.task.id})"`}>
+        <span class="me-task-item-icon">${catIcon(it.task.categoria)}</span>
+        <div class="me-task-item-info">
+          <div class="me-task-item-name">${it.task.name}</div>
+          <div class="me-task-item-meta">${courseNameOf(it.courseId)} · ${fmtDateFull ? fmtDateFull(it.task.deadline) : it.task.deadline}</div>
+        </div>
+        <span class="me-task-item-count">${disabled ? 'sin PDF' : it.teoriaCount + ' pdf'}</span>
+      </div>`;
+  });
+  body.innerHTML = html;
+}
+
+function meSelectTask(courseId, taskId) {
+  const task = (tasks[courseId] || []).find(t => t.id === taskId);
+  if (!task) return;
+  meState.activeTask = { courseId, taskId, task };
+  meState.selectedPdfs = [];
+  mePushAndGo('pdfs');
+}
+
+// ── PASO 3: selección de PDFs de teoría ──
+function meRenderPdfs(body) {
+  const task = meState.activeTask.task;
+  const teoria = (task.pdfs && task.pdfs.teoria) || [];
+  if (teoria.length === 0) {
+    body.innerHTML = `<div class="me-empty">Esta tarea no tiene PDF de teoría.</div>`;
+    return;
+  }
+  let html = `<div class="me-section-label">${task.name} · elegí uno o varios</div>`;
+  teoria.forEach((path, idx) => {
+    const name = path.split('/').pop();
+    const icon = getFileIcon(path);
+    const type = getFileType(path);
+    const selected = meState.selectedPdfs.includes(path);
+    html += `
+      <div class="me-pdf-item ${selected ? 'selected' : ''}" onclick="meTogglePdf('${path.replace(/'/g, "\\'")}')">
+        <span class="me-pdf-item-icon">${icon}</span>
+        <div class="me-pdf-item-info">
+          <div class="me-pdf-item-name">${name}</div>
+          <div class="me-pdf-item-type">${type}</div>
+        </div>
+        <span class="me-pdf-check">${selected ? '✓' : ''}</span>
+      </div>`;
+  });
+  html += `
+    <div class="me-continue-bar">
+      <button class="me-continue-btn" id="me-continue-btn" ${meState.selectedPdfs.length ? '' : 'disabled'} onclick="meContinueAfterPdfs()">
+        Continuar (${meState.selectedPdfs.length} seleccionado${meState.selectedPdfs.length === 1 ? '' : 's'})
+      </button>
+    </div>`;
+  body.innerHTML = html;
+}
+
+function meTogglePdf(path) {
+  const idx = meState.selectedPdfs.indexOf(path);
+  if (idx === -1) meState.selectedPdfs.push(path);
+  else meState.selectedPdfs.splice(idx, 1);
+  meRenderPdfs(document.getElementById('me-body'));
+}
+
+function meContinueAfterPdfs() {
+  if (meState.selectedPdfs.length === 0) return;
+  if (meState.metodo === 'pomodoro') return mePushAndGo('pomo-config');
+  if (meState.metodo === 'flashcards') { mePushAndGo('flashcards'); meRunFlashcards(); return; }
+}
+
+// ── POMODORO: configurar timer (recién acá, al elegir Pomodoro) ──
+function meRenderPomoConfig(body) {
+  body.innerHTML = `
+    <div class="me-pomo-config">
+      <div class="me-pomo-row">
+        <label>⏱ Minutos de trabajo</label>
+        <input type="number" id="me-pomo-trabajo" min="1" max="120" value="${meState.pomo.trabajo}">
+      </div>
+      <div class="me-pomo-row">
+        <label>☕ Minutos de descanso</label>
+        <input type="number" id="me-pomo-descanso" min="1" max="60" value="${meState.pomo.descanso}">
+      </div>
+      <button class="me-continue-btn" onclick="meStartPomodoro()">▶ Empezar a estudiar</button>
+    </div>`;
+}
+
+function meStartPomodoro() {
+  const trabajo = parseInt(document.getElementById('me-pomo-trabajo').value, 10) || 25;
+  const descanso = parseInt(document.getElementById('me-pomo-descanso').value, 10) || 5;
+  meState.pomo.trabajo = trabajo;
+  meState.pomo.descanso = descanso;
+  mePushAndGo('pomo-run');
+  meInitPomodoroRun();
+}
+
+// ── POMODORO: correr timer + mostrar PDFs ──
+let _mePomoInterval = null;
+let _mePomoSecondsLeft = 0;
+let _mePomoPhase = 'trabajo'; // 'trabajo' | 'descanso'
+let _mePomoPaused = true;
+
+function meInitPomodoroRun() {
+  _mePomoPhase = 'trabajo';
+  _mePomoSecondsLeft = meState.pomo.trabajo * 60;
+  _mePomoPaused = true;
+  meRenderPomoRun(document.getElementById('me-body'));
+}
+
+function meFmtTime(s) {
+  const m = Math.floor(s / 60).toString().padStart(2, '0');
+  const sec = (s % 60).toString().padStart(2, '0');
+  return `${m}:${sec}`;
+}
+
+function meRenderPomoRun(body) {
+  const pdfFrames = meState.selectedPdfs.map(path => `
+    <div class="me-pdf-frame-block">
+      <div class="me-pdf-frame-title">${getFileIcon(path)} ${path.split('/').pop()}</div>
+      <iframe src="${publicUrl(path)}"></iframe>
+    </div>`).join('');
+
+  body.innerHTML = `
+    <div class="me-pomo-runner">
+      <div class="me-pomo-phase" id="me-pomo-phase-label">${_mePomoPhase === 'trabajo' ? '🍅 Trabajo' : '☕ Descanso'}</div>
+      <div class="me-pomo-timer" id="me-pomo-timer-display">${meFmtTime(_mePomoSecondsLeft)}</div>
+      <div class="me-pomo-controls">
+        <button class="primary" id="me-pomo-toggle-btn" onclick="meTogglePomodoro()">▶ Iniciar</button>
+        <button onclick="meInitPomodoroRun()">↺ Reiniciar</button>
+      </div>
+    </div>
+    <div class="me-pdf-viewer-list">${pdfFrames}</div>`;
+}
+
+function meTogglePomodoro() {
+  _mePomoPaused = !_mePomoPaused;
+  const btn = document.getElementById('me-pomo-toggle-btn');
+  if (_mePomoPaused) {
+    btn.textContent = '▶ Iniciar';
+    clearInterval(_mePomoInterval);
+  } else {
+    btn.textContent = '⏸ Pausar';
+    _mePomoInterval = setInterval(meTickPomodoro, 1000);
+  }
+}
+
+function meTickPomodoro() {
+  _mePomoSecondsLeft--;
+  const display = document.getElementById('me-pomo-timer-display');
+  if (display) display.textContent = meFmtTime(_mePomoSecondsLeft);
+  if (_mePomoSecondsLeft <= 0) {
+    _mePomoPhase = _mePomoPhase === 'trabajo' ? 'descanso' : 'trabajo';
+    _mePomoSecondsLeft = (_mePomoPhase === 'trabajo' ? meState.pomo.trabajo : meState.pomo.descanso) * 60;
+    const label = document.getElementById('me-pomo-phase-label');
+    if (label) label.textContent = _mePomoPhase === 'trabajo' ? '🍅 Trabajo' : '☕ Descanso';
+    try { if (typeof Audio !== 'undefined') new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAAAAAA=').play(); } catch(e) {}
+  }
+}
+
+function meStopPomodoro() {
+  clearInterval(_mePomoInterval);
+  _mePomoInterval = null;
+  _mePomoPaused = true;
+}
+
+// ── FLASHCARDS con Groq (gpt-oss-120b vía Edge Function) ──
+let _meFlashcards = [];
+let _meFcIndex = 0;
+let _meFcFlipped = false;
+
+function meRenderFlashcards(body) {
+  body.innerHTML = `<div class="me-fc-loading">⏳ Extrayendo texto del/los PDF...</div>`;
+}
+
+async function meRunFlashcards() {
+  const body = document.getElementById('me-body');
+  try {
+    let contenido = '';
+    for (const path of meState.selectedPdfs) {
+      body.innerHTML = `<div class="me-fc-loading">⏳ Leyendo ${path.split('/').pop()}...</div>`;
+      const texto = await extraerTextoPDF(path);
+      if (texto) contenido += texto + '\n';
+    }
+    if (!contenido.trim()) {
+      body.innerHTML = `<div class="me-empty">No se pudo extraer texto de estos PDF (¿son escaneados/imagen?).</div>`;
+      return;
+    }
+
+    body.innerHTML = `<div class="me-fc-loading">🧠 Generando flashcards con IA...</div>`;
+
+    const res = await fetch(GENERAR_FLASHCARDS_FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nombre: meState.activeTask.task.name,
+        contenido: contenido.slice(0, 12000),
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok || data.error || !Array.isArray(data.flashcards) || data.flashcards.length === 0) {
+      body.innerHTML = `
+        <div class="me-empty">⚠ No se pudieron generar flashcards${data.error ? ' (' + data.error + ')' : ''}.</div>
+        <div style="text-align:center"><button class="me-continue-btn" style="max-width:260px" onclick="meRunFlashcards()">Reintentar</button></div>`;
+      return;
+    }
+
+    _meFlashcards = data.flashcards;
+    _meFcIndex = 0;
+    _meFcFlipped = false;
+    meRenderFcCard();
+  } catch (e) {
+    body.innerHTML = `
+      <div class="me-empty">⚠ Error: ${e.message}</div>
+      <div style="text-align:center"><button class="me-continue-btn" style="max-width:260px" onclick="meRunFlashcards()">Reintentar</button></div>`;
+  }
+}
+
+function meRenderFcCard() {
+  const body = document.getElementById('me-body');
+  const card = _meFlashcards[_meFcIndex];
+  body.innerHTML = `
+    <div class="me-fc-card" onclick="meFlipCard()">
+      <div class="me-fc-card-label">${_meFcFlipped ? 'Respuesta' : 'Pregunta'}</div>
+      <div class="me-fc-card-text">${_meFcFlipped ? card.respuesta : card.pregunta}</div>
+      <div class="me-fc-card-hint">Tocá la tarjeta para ${_meFcFlipped ? 'ver la pregunta' : 'ver la respuesta'}</div>
+    </div>
+    <div class="me-fc-nav">
+      <button onclick="meFcNav(-1)" ${_meFcIndex === 0 ? 'disabled' : ''}>← Anterior</button>
+      <span class="me-fc-counter">${_meFcIndex + 1} / ${_meFlashcards.length}</span>
+      <button onclick="meFcNav(1)" ${_meFcIndex === _meFlashcards.length - 1 ? 'disabled' : ''}>Siguiente →</button>
+    </div>`;
+}
+
+function meFlipCard() {
+  _meFcFlipped = !_meFcFlipped;
+  meRenderFcCard();
+}
+
+function meFcNav(delta) {
+  _meFcIndex = Math.max(0, Math.min(_meFlashcards.length - 1, _meFcIndex + delta));
+  _meFcFlipped = false;
+  meRenderFcCard();
 }
 </script>
 
