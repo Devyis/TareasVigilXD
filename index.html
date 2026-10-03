@@ -8607,6 +8607,12 @@ async function meRunFlashcards() {
     });
     const data = await res.json();
 
+    // Bitácora en consola: qué modelo generó las tarjetas y por qué se descartaron los anteriores
+    console.groupCollapsed(`[IA flashcards] ${data.error ? '❌ falló' : '✅ modelo usado: ' + data.modelo}`);
+    (data.intentos || []).forEach(l => console.log(l));
+    if (data.error) console.error(data.error);
+    console.groupEnd();
+
     if (!res.ok || data.error || !Array.isArray(data.flashcards) || data.flashcards.length === 0) {
       body.innerHTML = `
         <div class="me-empty">⚠ No se pudieron generar flashcards${data.error ? ' (' + data.error + ')' : ''}.</div>
