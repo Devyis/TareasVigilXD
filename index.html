@@ -7774,20 +7774,20 @@ function cerrarModalPriorizar() {
 }
 
 // Extrae el texto de un PDF dado su path en el bucket, usando pdf.js
-async function extraerTextoPDF(path) {
+async function extraerTextoPDF(path, maxPaginas = 15, maxChars = 6000) {
   try {
     const url = publicUrl(path);
     const res = await fetch(url);
     const buf = await res.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     let texto = '';
-    const maxPaginas = Math.min(pdf.numPages, 15); // límite razonable
-    for (let i = 1; i <= maxPaginas; i++) {
+    const limite = Math.min(pdf.numPages, maxPaginas);
+    for (let i = 1; i <= limite; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
       texto += content.items.map(it => it.str).join(' ') + '\n';
     }
-    return texto.trim().slice(0, 6000); // recorte para no gastar tokens de más
+    return texto.trim().slice(0, maxChars);
   } catch (e) {
     console.error('Error extrayendo PDF', path, e);
     return '';
@@ -8276,7 +8276,7 @@ const meState = {
 
 function courseNameOf(cid) {
   try {
-    if (typeof courses !== 'undefined' && courses[cid] && courses[cid].name) return courses[cid].name;
+    const co = COURSES.find(x => x.id === cid); if (co) return co.name;
   } catch (e) {}
   return 'Curso';
 }
@@ -8565,7 +8565,7 @@ async function meRunFlashcards() {
     let contenido = '';
     for (const path of meState.selectedPdfs) {
       body.innerHTML = `<div class="me-fc-loading">⏳ Leyendo ${path.split('/').pop()}...</div>`;
-      const texto = await extraerTextoPDF(path);
+      const texto = await extraerTextoPDF(path, 100, 120000);
       if (texto) contenido += texto + '\n';
     }
     if (!contenido.trim()) {
@@ -8580,7 +8580,7 @@ async function meRunFlashcards() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         nombre: meState.activeTask.task.name,
-        contenido: contenido.slice(0, 12000),
+        contenido: contenido.slice(0, 120000),
       }),
     });
     const data = await res.json();
