@@ -8674,6 +8674,11 @@ async function meEvaluar(modo, texto) {
     body: JSON.stringify({ modo, nombre: meState.activeTask.task.name, contenido, texto }),
   });
   const data = await res.json();
+  // Bitácora en consola: qué modelo respondió y por qué se descartaron los anteriores
+  console.groupCollapsed(`[IA ${modo}] ${data.error ? '❌ falló' : '✅ modelo usado: ' + data.modelo}`);
+  (data.intentos || []).forEach(l => console.log(l));
+  if (data.error) console.error(data.error);
+  console.groupEnd();
   if (!res.ok || data.error) throw new Error(data.error || 'Error al evaluar');
   return data.resultado;
 }
