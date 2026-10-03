@@ -8246,6 +8246,16 @@ function renderResultadoPriorizacion(itemsOrdenados) {
 }
 .me-fc-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
 .me-fc-counter { font-size: 0.78rem; color: var(--muted); font-weight: 700; min-width: 60px; text-align: center; }
+
+/* Feynman / Blurting */
+.me-textarea{width:100%;min-height:220px;padding:0.9rem;border:2px solid var(--line);border-radius:12px;background:var(--paper2);color:var(--ink);font-family:'Nunito',sans-serif;font-size:0.9rem;line-height:1.5;resize:vertical;outline:none}
+.me-textarea:focus{border-color:var(--accent)}
+.me-hint{font-size:0.78rem;color:var(--ink2);margin:0.4rem 0 0.8rem;line-height:1.5}
+.me-res-block{border:2px solid var(--line);border-radius:12px;padding:0.8rem 0.9rem;margin-bottom:0.7rem;background:var(--paper)}
+.me-res-block h4{font-size:0.78rem;font-weight:800;margin-bottom:0.4rem}
+.me-res-block ul{padding-left:1.1rem;font-size:0.8rem;line-height:1.5;color:var(--ink2)}
+.me-res-block.ok{border-color:var(--green)}.me-res-block.bad{border-color:var(--red)}.me-res-block.warn{border-color:var(--orange)}
+.me-score{font-family:'Caveat',cursive;font-size:3rem;font-weight:700;color:var(--accent);text-align:center}
 </style>
 
 <div class="me-overlay" id="me-overlay">
@@ -8319,6 +8329,8 @@ function meRender() {
     'pomo-config': '⏱ Configurar pomodoro',
     'pomo-run': '⏱ Pomodoro',
     flashcards: '🧠 Flashcards',
+    'feyn-run': '🧑‍🏫 Técnica Feynman',
+    'blurt-run': '🧾 Blurting',
   };
   document.getElementById('me-topbar-title').textContent = titles[meState.step] || '📚 Modo estudio';
   document.getElementById('me-back-btn').style.visibility = meState.history.length ? 'visible' : 'hidden';
@@ -8330,19 +8342,27 @@ function meRender() {
   if (meState.step === 'pomo-config') return meRenderPomoConfig(body);
   if (meState.step === 'pomo-run') return meRenderPomoRun(body);
   if (meState.step === 'flashcards') return meRenderFlashcards(body);
+  if (meState.step === 'feyn-run') return meRenderFeynman(body);
+  if (meState.step === 'blurt-run') return meRenderBlurting(body);
 }
 
 // ── PASO 1: métodos ──
 function meRenderMethods(body) {
   body.innerHTML = `
     <div class="me-methods">
-      <button class="me-method-btn" disabled title="Próximamente">
+      <button class="me-method-btn" onclick="meSelectMetodo('feynman')">
         <span class="me-method-icon">🧑‍🏫</span>
         <div class="me-method-text">
-          <div class="me-method-title">Técnica Feynmann</div>
-          <div class="me-method-sub">Explicá el tema con tus palabras</div>
+          <div class="me-method-title">Técnica Feynman</div>
+          <div class="me-method-sub">Explicá el tema como a un niño y la IA te corrige</div>
         </div>
-        <span class="me-method-badge">Próximamente</span>
+      </button>
+      <button class="me-method-btn" onclick="meSelectMetodo('blurting')">
+        <span class="me-method-icon">🧾</span>
+        <div class="me-method-text">
+          <div class="me-method-title">Blurting</div>
+          <div class="me-method-sub">Leé, tapá y escribí todo de memoria</div>
+        </div>
       </button>
       <button class="me-method-btn" onclick="meSelectMetodo('pomodoro')">
         <span class="me-method-icon">🍅</span>
@@ -8454,6 +8474,8 @@ function meContinueAfterPdfs() {
   if (meState.selectedPdfs.length === 0) return;
   if (meState.metodo === 'pomodoro') return mePushAndGo('pomo-config');
   if (meState.metodo === 'flashcards') { mePushAndGo('flashcards'); meRunFlashcards(); return; }
+  if (meState.metodo === 'feynman') { meFeyn = { texto: '', res: null, loading: false, err: '' }; mePushAndGo('feyn-run'); return; }
+  if (meState.metodo === 'blurting') { meBlurt = { fase: 'leer', texto: '', res: null, err: '' }; mePushAndGo('blurt-run'); return; }
 }
 
 // ── POMODORO: configurar timer (recién acá, al elegir Pomodoro) ──
@@ -8628,6 +8650,135 @@ function meFcNav(delta) {
   _meFcIndex = Math.max(0, Math.min(_meFlashcards.length - 1, _meFcIndex + delta));
   _meFcFlipped = false;
   meRenderFcCard();
+}
+
+// ═══ Utilidades compartidas (Feynman / Blurting) ═══
+const EVALUAR_FN_URL = `${SUPABASE_URL}/functions/v1/evaluar-estudio`;
+
+async function meGetContenido() {
+  const key = meState.selectedPdfs.join('|');
+  if (meState._contenidoKey === key && meState._contenido) return meState._contenido;
+  let c = '';
+  for (const p of meState.selectedPdfs) c += (await extraerTextoPDF(p, 100, 120000)) + '\n';
+  meState._contenido = c.trim();
+  meState._contenidoKey = key;
+  return meState._contenido;
+}
+
+async function meEvaluar(modo, texto) {
+  const contenido = await meGetContenido();
+  if (!contenido) throw new Error('No se pudo extraer texto del PDF (¿es escaneado?)');
+  const res = await fetch(EVALUAR_FN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ modo, nombre: meState.activeTask.task.name, contenido, texto }),
+  });
+  const data = await res.json();
+  if (!res.ok || data.error) throw new Error(data.error || 'Error al evaluar');
+  return data.resultado;
+}
+
+function meList(title, arr, cls) {
+  if (!arr || !arr.length) return '';
+  return `<div class="me-res-block ${cls}"><h4>${title}</h4><ul>${arr.map(x => `<li>${escHtml(x)}</li>`).join('')}</ul></div>`;
+}
+
+// ═══ FEYNMAN ═══
+let meFeyn = { texto: '', res: null, loading: false, err: '' };
+
+function meRenderFeynman(body) {
+  const r = meFeyn.res;
+  const resHTML = meFeyn.loading
+    ? `<div class="me-fc-loading">🧠 Evaluando tu explicación...</div>`
+    : meFeyn.err ? `<div class="me-empty">⚠ ${escHtml(meFeyn.err)}</div>`
+    : r ? `
+      <div class="me-score">${r.puntaje ?? '?'}/100</div>
+      ${meList('✅ Lo explicaste bien', r.correcto, 'ok')}
+      ${meList('❌ Errores', r.errores, 'bad')}
+      ${meList('🕳 Huecos (no lo mencionaste)', r.huecos, 'warn')}
+      ${meList('🔤 Jerga sin explicar', r.jerga, 'warn')}
+      ${meList('🧒 Preguntas que haría un niño', r.preguntas_nino, '')}
+      ${r.sugerencia ? `<div class="me-res-block"><h4>💡 Cómo mejorar</h4><div style="font-size:0.8rem;color:var(--ink2)">${escHtml(r.sugerencia)}</div></div>` : ''}` : '';
+  body.innerHTML = `
+    <div style="max-width:560px;margin:0 auto">
+      <div class="me-section-label">${escHtml(meState.activeTask.task.name)}</div>
+      <div class="me-hint">Explicá el tema <strong>con tus palabras</strong>, como si se lo enseñaras a un niño de 10 años. Sin copiar del PDF y sin jerga.</div>
+      <textarea class="me-textarea" id="me-feyn-text" placeholder="Escribí tu explicación...">${escHtml(meFeyn.texto)}</textarea>
+      <button class="me-continue-btn" style="margin-top:0.8rem" onclick="meEvaluarFeynman()" ${meFeyn.loading ? 'disabled' : ''}>🔍 Evaluar mi explicación</button>
+      <div style="margin-top:1rem">${resHTML}</div>
+    </div>`;
+}
+
+async function meEvaluarFeynman() {
+  const texto = document.getElementById('me-feyn-text').value.trim();
+  if (texto.length < 40) { alert('Escribí una explicación más larga.'); return; }
+  meFeyn = { texto, res: null, loading: true, err: '' };
+  meRenderFeynman(document.getElementById('me-body'));
+  try { meFeyn.res = await meEvaluar('feynman', texto); }
+  catch (e) { meFeyn.err = e.message; }
+  meFeyn.loading = false;
+  meRenderFeynman(document.getElementById('me-body'));
+}
+
+// ═══ BLURTING ═══
+let meBlurt = { fase: 'leer', texto: '', res: null, err: '' };
+
+function meBlurtSet(fase) {
+  meBlurt.fase = fase;
+  meRenderBlurting(document.getElementById('me-body'));
+}
+
+function meBlurtReset() {
+  meBlurt = { fase: 'leer', texto: '', res: null, err: '' };
+  meRenderBlurting(document.getElementById('me-body'));
+}
+
+function meRenderBlurting(body) {
+  if (meBlurt.fase === 'leer') {
+    const frames = meState.selectedPdfs.map(p => `
+      <div class="me-pdf-frame-block">
+        <div class="me-pdf-frame-title">${getFileIcon(p)} ${escHtml(p.split('/').pop())}</div>
+        <iframe src="${publicUrl(p)}"></iframe>
+      </div>`).join('');
+    body.innerHTML = `
+      <div class="me-hint" style="text-align:center">📖 <strong>Fase 1:</strong> leé el material con calma. Cuando sientas que lo tenés, tapalo.</div>
+      <div class="me-pdf-viewer-list">${frames}</div>
+      <div class="me-continue-bar"><button class="me-continue-btn" onclick="meBlurtSet('escribir')">🙈 Ya leí, taparlo y escribir</button></div>`;
+    return;
+  }
+  if (meBlurt.fase === 'escribir') {
+    body.innerHTML = `
+      <div style="max-width:560px;margin:0 auto">
+        <div class="me-hint">✍️ <strong>Fase 2:</strong> escribí <strong>todo lo que recuerdes</strong> del tema, sin mirar. Desordenado está bien.</div>
+        <textarea class="me-textarea" id="me-blurt-text" style="min-height:320px" placeholder="Soltá todo lo que te acuerdes...">${escHtml(meBlurt.texto)}</textarea>
+        <button class="me-continue-btn" style="margin-top:0.8rem" onclick="meEvaluarBlurting()">🔍 Comparar con el material</button>
+      </div>`;
+    return;
+  }
+  const r = meBlurt.res;
+  body.innerHTML = `
+    <div style="max-width:560px;margin:0 auto">
+      ${meBlurt.err ? `<div class="me-empty">⚠ ${escHtml(meBlurt.err)}</div>
+        <button class="me-continue-btn" style="margin-top:0.6rem" onclick="meBlurtSet('escribir')">← Volver a mi texto</button>`
+      : !r ? `<div class="me-fc-loading">🧠 Comparando con el material...</div>` : `
+        <div class="me-score">${r.cobertura ?? '?'}%</div>
+        <div class="me-hint" style="text-align:center">de las ideas clave recordadas</div>
+        ${meList('✅ Recordaste', r.recordado, 'ok')}
+        ${meList('🕳 Te olvidaste', r.olvidado, 'warn')}
+        ${meList('❌ Errores', r.errores, 'bad')}
+        ${r.sugerencia ? `<div class="me-res-block"><h4>💡 Qué repasar primero</h4><div style="font-size:0.8rem;color:var(--ink2)">${escHtml(r.sugerencia)}</div></div>` : ''}
+        <button class="me-continue-btn" style="margin-top:0.6rem" onclick="meBlurtReset()">🔁 Repasar y repetir</button>`}
+    </div>`;
+}
+
+async function meEvaluarBlurting() {
+  const texto = document.getElementById('me-blurt-text').value.trim();
+  if (texto.length < 40) { alert('Escribí más, aunque sea desordenado.'); return; }
+  meBlurt = { fase: 'resultado', texto, res: null, err: '' };
+  meRenderBlurting(document.getElementById('me-body'));
+  try { meBlurt.res = await meEvaluar('blurting', texto); }
+  catch (e) { meBlurt.err = e.message; }
+  meRenderBlurting(document.getElementById('me-body'));
 }
 </script>
 
