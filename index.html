@@ -8255,6 +8255,18 @@ function renderResultadoPriorizacion(itemsOrdenados) {
 .me-res-block h4{font-size:0.78rem;font-weight:800;margin-bottom:0.4rem}
 .me-res-block ul{padding-left:1.1rem;font-size:0.8rem;line-height:1.5;color:var(--ink2)}
 .me-res-block.ok{border-color:var(--green)}.me-res-block.bad{border-color:var(--red)}.me-res-block.warn{border-color:var(--orange)}
+.me-ol-list{list-style:none;padding-left:0!important}
+.me-ol-item{cursor:pointer;padding:.45rem .6rem;margin-bottom:.3rem;border-radius:8px;border:1px solid transparent;display:flex;justify-content:space-between;gap:.6rem;align-items:flex-start;transition:all .15s}
+.me-ol-item:hover{background:var(--accent-light,rgba(120,120,255,.12));border-color:var(--orange)}
+.me-ol-pg{flex-shrink:0;font-size:.68rem;font-weight:800;color:var(--orange);white-space:nowrap}
+.me-ol-hint{font-weight:600;font-size:.66rem;opacity:.65}
+.me-rep-bar{position:sticky;top:-1.1rem;z-index:5;margin:-1.1rem -1.1rem .8rem;padding:.7rem 1.1rem;background:var(--paper);border-bottom:2px solid var(--line)}
+.me-rep-bar-head{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin-bottom:.5rem;font-size:.78rem;font-weight:800}
+.me-rep-back,.me-rep-open{border:2px solid var(--line);background:var(--paper2);color:var(--ink);border-radius:10px;padding:.35rem .7rem;font-family:'Nunito',sans-serif;font-weight:800;font-size:.72rem;cursor:pointer;text-decoration:none}
+.me-rep-chips{display:flex;gap:.4rem;overflow-x:auto;padding-bottom:.2rem}
+.me-rep-chip{flex-shrink:0;max-width:220px;border:2px solid var(--line);background:var(--paper2);color:var(--ink2);border-radius:999px;padding:.35rem .8rem;font-family:'Nunito',sans-serif;font-weight:700;font-size:.72rem;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me-rep-chip.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.me-pdf-frame-block iframe.me-rep-frame{height:calc(100vh - 290px);min-height:360px}
 .me-score{font-family:'Caveat',cursive;font-size:3rem;font-weight:700;color:var(--accent);text-align:center}
 </style>
 
@@ -8689,9 +8701,124 @@ async function meEvaluar(modo, texto) {
   return data.resultado;
 }
 
+// La IA a veces devuelve objetos ({tema, correccion, ...}) en vez de strings -> los convertimos a texto
+function meItemText(x) {
+  if (x == null) return '';
+  if (typeof x === 'string') return x;
+  if (typeof x === 'object') {
+    const vals = Object.values(x).filter(v => typeof v === 'string' && v.trim());
+    return vals.join(' — ');
+  }
+  return String(x);
+}
+
 function meList(title, arr, cls) {
   if (!arr || !arr.length) return '';
-  return `<div class="me-res-block ${cls}"><h4>${title}</h4><ul>${arr.map(x => `<li>${escHtml(x)}</li>`).join('')}</ul></div>`;
+  return `<div class="me-res-block ${cls}"><h4>${title}</h4><ul>${arr.map(x => `<li>${escHtml(meItemText(x))}</li>`).join('')}</ul></div>`;
+}
+
+// ── Búsqueda de la página del PDF donde está cada tema olvidado ──
+function meNorm(t) {
+  return String(t).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+const ME_STOP = new Set(('de la el los las un una unos unas y o u e en con por para que como del al se su sus es son ser fue '+
+  'lo le les me te nos mas pero sin sobre entre este esta estos estas ese esa eso aqui hay muy ya no si tambien '+
+  'cual cuales detalles especificos problema relacion concepto conceptos idea ideas principal principales').split(' '));
+
+async function meGetPaginas() {
+  const key = meState.selectedPdfs.join('|');
+  if (meState._pagKey === key && meState._paginas) return meState._paginas;
+  const out = [];
+  for (const path of meState.selectedPdfs) {
+    try {
+      const buf = await (await fetch(publicUrl(path))).arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      const lim = Math.min(pdf.numPages, 300);
+      for (let i = 1; i <= lim; i++) {
+        const pg = await pdf.getPage(i);
+        const c = await pg.getTextContent();
+        out.push({ path, page: i, text: meNorm(c.items.map(it => it.str).join(' ')) });
+      }
+    } catch (e) { console.error('Error leyendo páginas de', path, e); }
+  }
+  meState._paginas = out;
+  meState._pagKey = key;
+  return out;
+}
+
+function meBuscarPagina(itemTxt, paginas) {
+  const toks = [...new Set(meNorm(itemTxt).split(/[^a-z0-9ñ]+/).filter(w => w.length >= 3 && !ME_STOP.has(w)))];
+  if (!toks.length || !paginas.length) return null;
+  const N = paginas.length;
+  const idf = {};
+  toks.forEach(t => {
+    const df = paginas.filter(pg => pg.text.includes(t)).length;
+    idf[t] = df ? Math.log(1 + N / df) : 0;
+  });
+  let best = null, bestScore = 0;
+  paginas.forEach(pg => {
+    let sc = 0;
+    toks.forEach(t => { if (idf[t] && pg.text.includes(t)) sc += idf[t]; });
+    if (sc > bestScore) { bestScore = sc; best = pg; }
+  });
+  return best ? { path: best.path, page: best.page } : null;
+}
+
+async function meCalcularRefs() {
+  const res = meBlurt.res;
+  if (!res || !res.olvidado || !res.olvidado.length) return;
+  try {
+    const paginas = await meGetPaginas();
+    if (meBlurt.res !== res) return; // el usuario ya reinició
+    meBlurt.refs = res.olvidado.map(x => meBuscarPagina(meItemText(x), paginas));
+  } catch (e) {
+    console.error(e);
+    meBlurt.refs = res.olvidado.map(() => null);
+  }
+  if (meBlurt.fase !== 'leer' && meBlurt.fase !== 'escribir') meRenderBlurting(document.getElementById('me-body'));
+}
+
+// Lista "Te olvidaste" con cada punto clickeable
+function meListOlvidado(arr) {
+  if (!arr || !arr.length) return '';
+  const refs = meBlurt.refs;
+  const items = arr.map((x, i) => {
+    const ref = refs ? refs[i] : undefined;
+    const tag = refs === null || refs === undefined
+      ? '<span class="me-ol-pg">⏳ buscando…</span>'
+      : ref ? `<span class="me-ol-pg">📄 pág. ${ref.page}</span>` : '<span class="me-ol-pg">📄 abrir</span>';
+    return `<li class="me-ol-item" onclick="meIrAParte(${i})">${escHtml(meItemText(x))} ${tag}</li>`;
+  }).join('');
+  return `<div class="me-res-block warn"><h4>🕳 Te olvidaste <span class="me-ol-hint">· tocá un punto para ir a esa parte</span></h4><ul class="me-ol-list">${items}</ul></div>`;
+}
+
+async function meIrAParte(i) {
+  if (!meBlurt.refs) await meCalcularRefs();
+  meBlurt.repIdx = i;
+  meBlurt.fase = 'repasar';
+  meRenderBlurting(document.getElementById('me-body'));
+}
+
+function meRenderRepasar(body) {
+  const items = meBlurt.res.olvidado;
+  const idx = meBlurt.repIdx || 0;
+  const ref = (meBlurt.refs && meBlurt.refs[idx]) || { path: meState.selectedPdfs[0], page: 1, noEncontrado: true };
+  const url = `${publicUrl(ref.path)}#page=${ref.page}`;
+  const chips = items.map((x, i) => `<button class="me-rep-chip ${i === idx ? 'active' : ''}" onclick="meIrAParte(${i})">${escHtml(meItemText(x))}</button>`).join('');
+  body.innerHTML = `
+    <div class="me-rep-bar">
+      <div class="me-rep-bar-head">
+        <button class="me-rep-back" onclick="meBlurtSet('resultado')">← Resultados</button>
+        <span class="me-rep-where">${ref.noEncontrado ? '📄 No ubiqué la página exacta' : '📄 Página ' + ref.page}</span>
+        <a class="me-rep-open" href="${url}" target="_blank">↗ Abrir</a>
+      </div>
+      <div class="me-rep-chips">${chips}</div>
+    </div>
+    <div class="me-pdf-frame-block">
+      <div class="me-pdf-frame-title">${getFileIcon(ref.path)} ${escHtml(ref.path.split('/').pop())}</div>
+      <iframe class="me-rep-frame" src="${url}"></iframe>
+    </div>
+    <div class="me-continue-bar"><button class="me-continue-btn" onclick="meBlurtReset()">🔁 Ya repasé, repetir blurting</button></div>`;
 }
 
 // ═══ FEYNMAN ═══
@@ -8732,7 +8859,7 @@ async function meEvaluarFeynman() {
 }
 
 // ═══ BLURTING ═══
-let meBlurt = { fase: 'leer', texto: '', res: null, err: '' };
+let meBlurt = { fase: 'leer', texto: '', res: null, err: '', refs: null, repIdx: 0 };
 
 function meBlurtSet(fase) {
   meBlurt.fase = fase;
@@ -8740,7 +8867,7 @@ function meBlurtSet(fase) {
 }
 
 function meBlurtReset() {
-  meBlurt = { fase: 'leer', texto: '', res: null, err: '' };
+  meBlurt = { fase: 'leer', texto: '', res: null, err: '', refs: null, repIdx: 0 };
   meRenderBlurting(document.getElementById('me-body'));
 }
 
@@ -8766,6 +8893,7 @@ function meRenderBlurting(body) {
       </div>`;
     return;
   }
+  if (meBlurt.fase === 'repasar' && meBlurt.res) return meRenderRepasar(body);
   const r = meBlurt.res;
   body.innerHTML = `
     <div style="max-width:560px;margin:0 auto">
@@ -8775,7 +8903,7 @@ function meRenderBlurting(body) {
         <div class="me-score">${r.cobertura ?? '?'}%</div>
         <div class="me-hint" style="text-align:center">de las ideas clave recordadas</div>
         ${meList('✅ Recordaste', r.recordado, 'ok')}
-        ${meList('🕳 Te olvidaste', r.olvidado, 'warn')}
+        ${meListOlvidado(r.olvidado)}
         ${meList('❌ Errores', r.errores, 'bad')}
         ${r.sugerencia ? `<div class="me-res-block"><h4>💡 Qué repasar primero</h4><div style="font-size:0.8rem;color:var(--ink2)">${escHtml(r.sugerencia)}</div></div>` : ''}
         <button class="me-continue-btn" style="margin-top:0.6rem" onclick="meBlurtReset()">🔁 Repasar y repetir</button>`}
@@ -8785,11 +8913,12 @@ function meRenderBlurting(body) {
 async function meEvaluarBlurting() {
   const texto = document.getElementById('me-blurt-text').value.trim();
   if (texto.length < 40) { alert('Escribí más, aunque sea desordenado.'); return; }
-  meBlurt = { fase: 'resultado', texto, res: null, err: '' };
+  meBlurt = { fase: 'resultado', texto, res: null, err: '', refs: null, repIdx: 0 };
   meRenderBlurting(document.getElementById('me-body'));
   try { meBlurt.res = await meEvaluar('blurting', texto); }
   catch (e) { meBlurt.err = e.message; }
   meRenderBlurting(document.getElementById('me-body'));
+  meCalcularRefs(); // ubica en qué página del PDF está cada tema olvidado
 }
 </script>
 
