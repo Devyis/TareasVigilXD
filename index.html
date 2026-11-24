@@ -3134,6 +3134,167 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
   transition: all 0.2s;
 }
 .fc-deck-modal-confirm:hover { transform: translateY(-1px); }
+
+/* ── BARRA IA: crear tareas con lenguaje natural (solo admin / Siesta) ── */
+.ai-bar-wrap { display: none; padding: 0.9rem 1.2rem 0; }
+.ai-bar-wrap.show { display: block; }
+.ai-bar {
+  position: relative;
+  border-radius: 26px;
+  padding: 2px;
+  background: linear-gradient(100deg, #7048e8, #3b5bdb, #0c8599, #e64980, #7048e8);
+  background-size: 300% 100%;
+  animation: aiFlow 7s linear infinite;
+  box-shadow: 0 0 14px rgba(112,72,232,0.35), 0 0 34px rgba(59,91,219,0.18);
+  transition: box-shadow 0.3s;
+}
+.ai-bar:focus-within {
+  box-shadow: 0 0 18px rgba(112,72,232,0.6), 0 0 46px rgba(59,91,219,0.35);
+  animation-duration: 3.5s;
+}
+.ai-bar.loading { animation-duration: 1.2s; }
+@keyframes aiFlow { to { background-position: 300% 0; } }
+.ai-bar-inner {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+  background: var(--paper);
+  border-radius: 24px;
+  padding: 0.45rem 0.45rem 0.45rem 1rem;
+}
+.ai-spark { font-size: 1.1rem; line-height: 1.9rem; flex-shrink: 0; }
+.ai-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  resize: none;
+  font-family: 'Nunito', sans-serif;
+  font-size: 0.9rem;
+  color: var(--ink);
+  line-height: 1.4;
+  padding: 0.3rem 0;
+  min-height: 1.9rem;
+  max-height: 112px;
+}
+.ai-input::placeholder { color: var(--muted); }
+.ai-input:disabled { opacity: 0.6; }
+.ai-send {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #7048e8, #3b5bdb);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.15s, opacity 0.15s;
+}
+.ai-send:hover { transform: scale(1.07); }
+.ai-send:disabled { opacity: 0.6; cursor: default; transform: none; }
+.ai-send.spin::after {
+  content: '';
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: aiSpin 0.7s linear infinite;
+}
+.ai-send.spin span { display: none; }
+@keyframes aiSpin { to { transform: rotate(360deg); } }
+.ai-status { font-size: 0.74rem; margin: 0.45rem 0.5rem 0; min-height: 1em; color: var(--muted); }
+.ai-status.err { color: var(--red); }
+.ai-status.ok { color: var(--green); font-weight: 700; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-bar, .ai-bar:focus-within, .ai-bar.loading { animation: none; }
+  .ai-track { transition: none !important; }
+}
+
+/* ── Confirmación: tareas una por una (swipe) ── */
+.ai-overlay {
+  position: fixed; inset: 0; z-index: 750;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,10,26,0.6);
+  backdrop-filter: blur(4px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.ai-overlay.open { opacity: 1; pointer-events: all; }
+.ai-sheet {
+  background: var(--paper);
+  border: 2px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow-lg);
+  width: 92%; max-width: 440px;
+  max-height: 92vh;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  transform: scale(0.94) translateY(10px);
+  transition: transform 0.28s cubic-bezier(0.16,1,0.3,1);
+}
+.ai-overlay.open .ai-sheet { transform: none; }
+.ai-head { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding: 0.9rem 1.1rem 0.4rem; }
+.ai-head-title { font-family: 'Caveat', cursive; font-size: 1.35rem; font-weight: 700; color: var(--ink); flex: 1; }
+.ai-counter { font-family: 'Caveat', cursive; font-size: 2rem; font-weight: 700; color: var(--accent); line-height: 1; }
+.ai-close {
+  background: none; border: 2px solid var(--line); color: var(--ink2);
+  width: 30px; height: 30px; border-radius: 50%; cursor: pointer; font-size: 0.8rem;
+}
+.ai-close:hover { border-color: var(--red); color: var(--red); }
+.ai-aviso {
+  display: none;
+  margin: 0.2rem 1.1rem 0.2rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 10px;
+  background: var(--orange-light); color: var(--orange);
+  font-size: 0.76rem; font-weight: 600; line-height: 1.35;
+}
+.ai-aviso.show { display: block; }
+.ai-viewport { overflow: hidden; flex: 1; min-height: 0; touch-action: pan-y; }
+.ai-track { display: flex; transition: transform 0.4s cubic-bezier(0.22,1,0.36,1); }
+.ai-slide { flex: 0 0 100%; min-width: 0; padding: 0.4rem 1.1rem 0.8rem; overflow-y: auto; max-height: 58vh; }
+.ai-slide-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem; }
+.ai-slide-tag { font-size: 0.78rem; font-weight: 800; color: var(--ink2); }
+.ai-remove {
+  background: none; border: none; cursor: pointer;
+  font-family: 'Nunito', sans-serif; font-size: 0.72rem; font-weight: 700; color: var(--muted);
+  padding: 0.25rem 0.4rem; border-radius: 8px;
+}
+.ai-remove:hover { color: var(--red); background: var(--red-light); }
+.ai-row { display: flex; gap: 0.6rem; }
+.ai-row > .form-group { flex: 1; min-width: 0; }
+.ai-datehint { font-size: 0.74rem; color: var(--ink2); margin: -0.35rem 0 0.8rem; font-weight: 600; }
+.ai-cats { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.ai-cat {
+  flex: 1; min-width: 0;
+  padding: 0.5rem 0.3rem;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: var(--paper2); color: var(--ink2);
+  font-family: 'Nunito', sans-serif; font-size: 0.76rem; font-weight: 700;
+  cursor: pointer; transition: all 0.15s;
+}
+.ai-cat.on.ai-cat-tarea      { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+.ai-cat.on.ai-cat-exposicion { border-color: var(--expo);   background: var(--expo-light);   color: var(--expo); }
+.ai-cat.on.ai-cat-examen     { border-color: var(--examen); background: var(--examen-light); color: var(--examen); }
+.ai-slide textarea.form-control { min-height: 84px; resize: vertical; font-family: 'Nunito', sans-serif; }
+.ai-missing { border-color: var(--red) !important; box-shadow: 0 0 0 3px var(--red-light); }
+.ai-dots { display: flex; justify-content: center; gap: 0.35rem; padding: 0.2rem 0 0.5rem; }
+.ai-dot { width: 7px; height: 7px; border-radius: 4px; border: none; padding: 0; background: var(--line); cursor: pointer; transition: all 0.25s; }
+.ai-dot.on { width: 20px; background: var(--accent); }
+.ai-foot { display: flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.1rem 1rem; border-top: 2px solid var(--line); }
+.ai-nav-btn {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: 50%; border: 2px solid var(--line);
+  background: var(--paper2); color: var(--ink2);
+  font-size: 1.3rem; line-height: 1; cursor: pointer; transition: all 0.15s;
+}
+.ai-nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+.ai-nav-btn:disabled { opacity: 0.35; cursor: default; }
+.ai-create { flex: 1; }
 </style>
 </head>
 <body>
@@ -3158,6 +3319,17 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
       </div>
     </div>
     <div class="home-stats" id="home-stats"></div>
+  </div>
+  <!-- BARRA IA: crear tareas con lenguaje natural (solo admin / Siesta) -->
+  <div class="ai-bar-wrap" id="ai-bar-wrap">
+    <div class="ai-bar" id="ai-bar">
+      <div class="ai-bar-inner">
+        <span class="ai-spark">✨</span>
+        <textarea class="ai-input" id="ai-input" rows="1" placeholder="Ej: examen de POO el miércoles y BDD el viernes" oninput="aiAutoGrow(this)" onkeydown="aiKey(event)"></textarea>
+        <button class="ai-send" id="ai-send" onclick="aiSubmit()" title="Crear tareas con IA" aria-label="Crear tareas con IA"><span>↑</span></button>
+      </div>
+    </div>
+    <div class="ai-status" id="ai-status"></div>
   </div>
  <div id="home-banner-container"></div>
   <div id="ticker-wrap-container"></div>        <!-- ← ticker PRIMERO -->
@@ -3381,6 +3553,27 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeAddModalDirect()">Cancelar</button>
       <button class="btn-confirm" id="modal-save-btn" onclick="saveTask()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- IA: CONFIRMAR TAREAS (carrusel una por una) -->
+<div class="ai-overlay" id="ai-overlay" onclick="if(event.target===this) aiClose()">
+  <div class="ai-sheet" role="dialog" aria-modal="true" aria-label="Confirmar tareas">
+    <div class="ai-head">
+      <div class="ai-head-title">✨ Revisa y confirma</div>
+      <div class="ai-counter" id="ai-counter">1/1</div>
+      <button class="ai-close" onclick="aiClose()" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="ai-aviso" id="ai-aviso"></div>
+    <div class="ai-viewport" id="ai-viewport">
+      <div class="ai-track" id="ai-track"></div>
+    </div>
+    <div class="ai-dots" id="ai-dots"></div>
+    <div class="ai-foot">
+      <button class="ai-nav-btn" id="ai-prev" onclick="aiPrev()" aria-label="Anterior">‹</button>
+      <button class="btn-confirm ai-create" id="ai-create" onclick="aiCreateAll()">Crear tarea</button>
+      <button class="ai-nav-btn" id="ai-next" onclick="aiNext()" aria-label="Siguiente">›</button>
     </div>
   </div>
 </div>
@@ -4161,6 +4354,7 @@ function goBack(to) {
 // RENDER HOME
 // ═══════════════════════════════════════════
 function renderHome() {
+  updateAIBar();
   vsRenderHomeInvites();
   renderHomeVersusSection();
   renderChatSection();
@@ -5565,6 +5759,7 @@ async function savePersonalStateToDb(taskId, hecho, entregado) {
 }
 
 function renderPersonalSection() {
+  updateAIBar();
   const container = document.getElementById('personal-section-container');
   if (!container) return;
 
@@ -7737,6 +7932,348 @@ function vsStartHomePolling() {
   vsRenderHomeInvites();
   _vsHomePollTimer = setInterval(vsRenderHomeInvites, 5000);
 }
+
+// ═══════════════════════════════════════════
+// BARRA IA — CREAR TAREAS CON LENGUAJE NATURAL (solo admin / Siesta)
+// Interpreta el texto con DeepSeek (edge function "crear-tareas-ia"),
+// muestra cada tarea en un carrusel editable y recién al confirmar las guarda.
+// ═══════════════════════════════════════════
+const AI_TASKS_FN_URL = `${SUPABASE_URL}/functions/v1/crear-tareas-ia`;
+const AI_ALWAYS_ADMIN = ['siesta']; // estos usuarios ven la barra sin poner la contraseña de admin
+const AI_CATS = [['tarea', '📋', 'Tarea'], ['exposicion', '🎤', 'Exposición'], ['examen', '📝', 'Examen']];
+
+let _aiDrafts = [];
+let _aiIdx = 0;
+let _aiBusy = false;
+
+const aiEl = id => document.getElementById(id);
+const aiPad = n => String(n).padStart(2, '0');
+
+function aiCanUse() {
+  return isAdmin || (!!currentUser && AI_ALWAYS_ADMIN.includes(currentUser.username));
+}
+
+function updateAIBar() {
+  const w = aiEl('ai-bar-wrap');
+  if (w) w.classList.toggle('show', aiCanUse());
+}
+
+function aiSetStatus(msg, kind) {
+  const el = aiEl('ai-status');
+  el.textContent = msg || '';
+  el.className = 'ai-status' + (kind ? ' ' + kind : '');
+}
+
+function aiAutoGrow(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 112) + 'px';
+}
+
+function aiKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    aiSubmit();
+  }
+}
+
+function aiSetBusy(on) {
+  _aiBusy = on;
+  aiEl('ai-bar').classList.toggle('loading', on);
+  aiEl('ai-input').disabled = on;
+  const b = aiEl('ai-send');
+  b.disabled = on;
+  b.classList.toggle('spin', on);
+}
+
+// Calendario que se le manda a la IA: las semanas van de lunes a domingo, así
+// "la próxima semana el miércoles" se resuelve leyendo una tabla, no calculando.
+function aiBuildCalendar() {
+  const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+  const iso = d => `${d.getFullYear()}-${aiPad(d.getMonth() + 1)}-${aiPad(d.getDate())}`;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const lunes = new Date(hoy);
+  lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+  const etiquetas = ['ESTA SEMANA', 'PRÓXIMA SEMANA (la semana que viene)', 'EN 2 SEMANAS', 'EN 3 SEMANAS', 'EN 4 SEMANAS'];
+  let out = `HOY es ${DIAS[hoy.getDay()]} ${iso(hoy)}.\n`;
+  etiquetas.forEach((et, w) => {
+    out += `\n${et}:\n`;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(lunes);
+      d.setDate(lunes.getDate() + w * 7 + i);
+      out += `- ${DIAS[d.getDay()]} ${iso(d)}${iso(d) === iso(hoy) ? '  ← HOY' : ''}\n`;
+    }
+  });
+  return out;
+}
+
+// "14:30" → "02:30:PM" (el formato en que la app guarda deadline_time)
+function aiTo12h(hhmm) {
+  if (!hhmm) return null;
+  const [h, m] = hhmm.split(':').map(Number);
+  if (isNaN(h) || isNaN(m)) return null;
+  return `${aiPad(h % 12 || 12)}:${aiPad(m)}:${h >= 12 ? 'PM' : 'AM'}`;
+}
+
+function aiDateHint(f) {
+  if (!f) return '📅 Falta la fecha';
+  const txt = new Date(f + 'T00:00:00').toLocaleDateString('es-PE', { weekday: 'long', day: 'numeric', month: 'long' });
+  const d = daysLeft(f);
+  const suf = d < 0 ? ' · ya pasó' : d === 0 ? ' · hoy' : d === 1 ? ' · mañana' : ` · en ${d} días`;
+  return `📅 ${txt}${suf}`;
+}
+
+// ── Enviar el texto a la IA ──
+async function aiSubmit() {
+  if (_aiBusy || !aiCanUse()) return;
+  const input = aiEl('ai-input');
+  const texto = input.value.trim();
+  if (texto.length < 4) { aiSetStatus('Escribe qué tarea quieres crear.', 'err'); return; }
+
+  aiSetBusy(true);
+  aiSetStatus('Interpretando…');
+  try {
+    const res = await fetch(AI_TASKS_FN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON, 'Authorization': `Bearer ${SUPABASE_ANON}` },
+      body: JSON.stringify({
+        texto,
+        calendario: aiBuildCalendar(),
+        cursos: COURSES.map(c => ({ id: c.id, name: c.name })),
+      }),
+    });
+    const data = await res.json().catch(() => ({ error: `Respuesta inválida (${res.status})` }));
+    if (data.error) throw new Error(data.error);
+    if (!data.tareas || !data.tareas.length) {
+      aiSetStatus(data.aviso || 'No encontré ninguna tarea en ese texto.', 'err');
+      return;
+    }
+    _aiDrafts = data.tareas.map(t => ({
+      nombre: t.nombre || '',
+      curso_id: t.curso_id || '',
+      fecha: t.fecha || '',
+      hora: t.hora || '',
+      categoria: t.categoria || 'tarea',
+      descripcion: t.descripcion || '',
+    }));
+    aiSetStatus('');
+    aiOpen(data.aviso || '');
+  } catch (e) {
+    aiSetStatus('⚠ ' + e.message, 'err');
+  } finally {
+    aiSetBusy(false);
+  }
+}
+
+// ── Carrusel de confirmación ──
+function aiOpen(aviso) {
+  _aiIdx = 0;
+  const av = aiEl('ai-aviso');
+  av.textContent = aviso ? '💬 ' + aviso : '';
+  av.classList.toggle('show', !!aviso);
+  aiRenderSlides();
+  aiUpdateNav();
+  aiEl('ai-overlay').classList.add('open');
+}
+
+function aiClose() {
+  aiEl('ai-overlay').classList.remove('open');
+}
+
+function aiRenderSlides() {
+  const cursos = d => COURSES.map(c =>
+    `<option value="${c.id}" ${d.curso_id === c.id ? 'selected' : ''}>${c.icon} ${escHtml(c.name)}</option>`).join('');
+  aiEl('ai-track').innerHTML = _aiDrafts.map((d, i) => `
+    <div class="ai-slide" data-i="${i}">
+      <div class="ai-slide-top">
+        <span class="ai-slide-tag">Tarea ${i + 1}</span>
+        <button class="ai-remove" type="button" onclick="aiRemove(${i})">🗑 Quitar</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input class="form-control ${d.nombre ? '' : 'ai-missing'}" data-f="nombre" type="text" value="${escHtml(d.nombre)}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Curso</label>
+        <select class="form-control ${d.curso_id ? '' : 'ai-missing'}" data-f="curso_id">
+          <option value="">Elige un curso…</option>${cursos(d)}
+        </select>
+      </div>
+      <div class="ai-row">
+        <div class="form-group">
+          <label class="form-label">Fecha límite</label>
+          <input class="form-control ${d.fecha ? '' : 'ai-missing'}" data-f="fecha" type="date" value="${escHtml(d.fecha)}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Hora (opcional)</label>
+          <input class="form-control" data-f="hora" type="time" value="${escHtml(d.hora)}">
+        </div>
+      </div>
+      <div class="ai-datehint" data-hint>${aiDateHint(d.fecha)}</div>
+      <div class="form-group" style="margin-bottom:0.4rem"><label class="form-label">Categoría</label></div>
+      <div class="ai-cats">
+        ${AI_CATS.map(([k, e, l]) => `<button type="button" class="ai-cat ai-cat-${k} ${d.categoria === k ? 'on' : ''}" data-cat="${k}">${e} ${l}</button>`).join('')}
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción (opcional)</label>
+        <textarea class="form-control" data-f="descripcion" placeholder="Notas o detalles de la tarea">${escHtml(d.descripcion)}</textarea>
+      </div>
+    </div>`).join('');
+}
+
+function aiUpdateNav() {
+  const n = _aiDrafts.length;
+  aiEl('ai-track').style.transform = `translateX(-${_aiIdx * 100}%)`;
+  aiEl('ai-counter').textContent = `${_aiIdx + 1}/${n}`;
+  aiEl('ai-track').querySelectorAll('.ai-slide').forEach((s, i) => { s.inert = i !== _aiIdx; });
+  aiEl('ai-dots').innerHTML = n > 1
+    ? _aiDrafts.map((_, i) => `<button class="ai-dot ${i === _aiIdx ? 'on' : ''}" onclick="aiGo(${i})" aria-label="Tarea ${i + 1}"></button>`).join('')
+    : '';
+  aiEl('ai-prev').disabled = _aiIdx === 0;
+  aiEl('ai-next').disabled = _aiIdx >= n - 1;
+  aiEl('ai-prev').style.visibility = aiEl('ai-next').style.visibility = n > 1 ? 'visible' : 'hidden';
+  aiEl('ai-create').textContent = n === 1 ? '✓ Crear tarea' : `✓ Crear ${n} tareas`;
+}
+
+function aiGo(i) {
+  if (!_aiDrafts.length) return;
+  _aiIdx = Math.max(0, Math.min(_aiDrafts.length - 1, i));
+  aiUpdateNav();
+}
+function aiNext() { aiGo(_aiIdx + 1); }
+function aiPrev() { aiGo(_aiIdx - 1); }
+
+function aiRemove(i) {
+  _aiDrafts.splice(i, 1);
+  if (!_aiDrafts.length) { aiClose(); return; }
+  _aiIdx = Math.min(_aiIdx, _aiDrafts.length - 1);
+  aiRenderSlides();
+  aiUpdateNav();
+}
+
+// Marca lo que falta y salta a la primera tarea incompleta. Devuelve su índice o -1.
+function aiValidate() {
+  let first = -1;
+  const slides = aiEl('ai-track').querySelectorAll('.ai-slide');
+  _aiDrafts.forEach((d, i) => {
+    const miss = [];
+    if (!d.nombre.trim()) miss.push('nombre');
+    if (!d.curso_id) miss.push('curso_id');
+    if (!d.fecha) miss.push('fecha');
+    miss.forEach(f => slides[i].querySelector(`[data-f="${f}"]`).classList.add('ai-missing'));
+    if (miss.length && first === -1) first = i;
+  });
+  if (first !== -1) {
+    aiGo(first);
+    const av = aiEl('ai-aviso');
+    av.textContent = `💬 Completa lo marcado en rojo en la tarea ${first + 1}.`;
+    av.classList.add('show');
+  }
+  return first;
+}
+
+// ── Guardar todas ──
+async function aiCreateAll() {
+  if (_aiBusy || !_aiDrafts.length) return;
+  if (aiValidate() !== -1) return;
+
+  _aiBusy = true;
+  const btn = aiEl('ai-create');
+  btn.disabled = true;
+  btn.textContent = 'Creando…';
+
+  const base = Date.now();
+  let created = 0;
+  try {
+    for (let i = 0; i < _aiDrafts.length; i++) {
+      const d = _aiDrafts[i];
+      const t = {
+        id: base + i,
+        course_id: d.curso_id,
+        name: d.nombre.trim(),
+        deadline: d.fecha,
+        deadline_time: aiTo12h(d.hora),
+        description: d.descripcion.trim(),
+        entrega: '',
+        desc_images: [],
+        pdfs: { teoria: [], tarea: [], adjuntos: [] },
+        categoria: d.categoria,
+      };
+      await dbInsertTask(t);
+      if (!tasks[t.course_id]) tasks[t.course_id] = [];
+      tasks[t.course_id].push({
+        id: t.id, name: t.name, deadline: t.deadline, deadline_time: t.deadline_time,
+        description: t.description, entrega: '', desc_images: [], pdfs: t.pdfs,
+        categoria: t.categoria, flashcards: [],
+      });
+      created++;
+    }
+    aiClose();
+    _aiDrafts = [];
+    aiEl('ai-input').value = '';
+    aiAutoGrow(aiEl('ai-input'));
+    aiSetStatus(`✓ ${created === 1 ? 'Se creó 1 tarea' : `Se crearon ${created} tareas`}`, 'ok');
+    setTimeout(() => { if (aiEl('ai-status').classList.contains('ok')) aiSetStatus(''); }, 5000);
+  } catch (e) {
+    // las que ya se guardaron salen de la lista; quedan solo las pendientes
+    _aiDrafts.splice(0, created);
+    alert(`Se crearon ${created} y falló una: ${e.message}\nQuedan ${_aiDrafts.length} por confirmar.`);
+    _aiIdx = 0;
+    aiRenderSlides();
+  }
+  _aiBusy = false;
+  btn.disabled = false;
+  if (_aiDrafts.length && aiEl('ai-overlay').classList.contains('open')) aiUpdateNav();
+
+  renderHome();
+  const sc = aiEl('screen-course');
+  if (created && sc && sc.classList.contains('active') && activeCourseId) renderCourse(activeCourseId);
+}
+
+// ── Eventos (una sola vez) ──
+(function aiBindEvents() {
+  const track = aiEl('ai-track');
+  const vp = aiEl('ai-viewport');
+
+  track.addEventListener('input', e => {
+    const f = e.target.dataset && e.target.dataset.f;
+    if (!f) return;
+    const slide = e.target.closest('.ai-slide');
+    const i = +slide.dataset.i;
+    _aiDrafts[i][f] = e.target.value;
+    e.target.classList.remove('ai-missing');
+    if (f === 'fecha') slide.querySelector('[data-hint]').textContent = aiDateHint(e.target.value);
+  });
+
+  track.addEventListener('click', e => {
+    const b = e.target.closest('[data-cat]');
+    if (!b) return;
+    const slide = b.closest('.ai-slide');
+    _aiDrafts[+slide.dataset.i].categoria = b.dataset.cat;
+    slide.querySelectorAll('[data-cat]').forEach(x => x.classList.toggle('on', x === b));
+  });
+
+  // swipe horizontal en el celular
+  let sx = 0, sy = 0, tracking = false;
+  vp.addEventListener('touchstart', e => {
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; tracking = true;
+  }, { passive: true });
+  vp.addEventListener('touchend', e => {
+    if (!tracking) return;
+    tracking = false;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.4) { dx < 0 ? aiNext() : aiPrev(); }
+  }, { passive: true });
+
+  document.addEventListener('keydown', e => {
+    if (!aiEl('ai-overlay').classList.contains('open')) return;
+    if (e.key === 'Escape') { aiClose(); return; }
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (e.key === 'ArrowRight') aiNext();
+    if (e.key === 'ArrowLeft') aiPrev();
+  });
+})();
+
 
 init();
 vsStartHomePolling();
