@@ -3295,6 +3295,7 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
 .ai-nav-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
 .ai-nav-btn:disabled { opacity: 0.35; cursor: default; }
 .ai-create { flex: 1; }
+.ai-editnote { font-size: 0.74rem; color: var(--ink2); background: var(--accent-light); border-radius: 8px; padding: 0.35rem 0.6rem; margin: -0.2rem 0 0.7rem; }
 </style>
 </head>
 <body>
@@ -3325,8 +3326,8 @@ body.dark-mode .fc-card-back { background: linear-gradient(145deg, #0d2010, #091
     <div class="ai-bar" id="ai-bar">
       <div class="ai-bar-inner">
         <span class="ai-spark">✨</span>
-        <textarea class="ai-input" id="ai-input" rows="1" placeholder="Ej: examen de POO el miércoles y BDD el viernes" oninput="aiAutoGrow(this)" onkeydown="aiKey(event)"></textarea>
-        <button class="ai-send" id="ai-send" onclick="aiSubmit()" title="Crear tareas con IA" aria-label="Crear tareas con IA"><span>↑</span></button>
+        <textarea class="ai-input" id="ai-input" rows="1" placeholder="Crea o edita: ej. examen de POO el miércoles" oninput="aiAutoGrow(this)" onkeydown="aiKey(event)"></textarea>
+        <button class="ai-send" id="ai-send" onclick="aiSubmit()" title="Crear o editar tareas con IA" aria-label="Crear o editar tareas con IA"><span>↑</span></button>
       </div>
     </div>
     <div class="ai-status" id="ai-status"></div>
@@ -8022,6 +8023,61 @@ function aiDateHint(f) {
   return `📅 ${txt}${suf}`;
 }
 
+// "02:30:PM" → "14:30" (inverso de aiTo12h, para el campo de hora)
+function aiFrom12h(t) {
+  if (!t) return '';
+  const [h, m, ap] = t.split(':');
+  let hh = parseInt(h, 10);
+  if (isNaN(hh)) return '';
+  if (ap === 'PM' && hh !== 12) hh += 12;
+  if (ap === 'AM' && hh === 12) hh = 0;
+  return `${aiPad(hh)}:${aiPad(parseInt(m, 10) || 0)}`;
+}
+
+// Tareas existentes (pendientes y de las últimas 2 semanas) para que la IA pueda editarlas
+function aiBuildExistentes() {
+  const out = [];
+  for (const cid in tasks) {
+    for (const t of (tasks[cid] || [])) {
+      if (daysLeft(t.deadline) < -14) continue;
+      out.push({ id: String(t.id), curso_id: cid, nombre: t.name, fecha: t.deadline, categoria: t.categoria || 'tarea', descripcion: t.description || '' });
+    }
+  }
+  out.sort((a, b) => (a.fecha < b.fecha ? -1 : 1));
+  return out.slice(0, 100);
+}
+
+function aiFindTask(id) {
+  for (const cid in tasks) {
+    const task = (tasks[cid] || []).find(x => String(x.id) === String(id));
+    if (task) return { task, cid };
+  }
+  return null;
+}
+
+// Convierte lo que devuelve la IA en un borrador editable.
+// En una edición, los campos null ("sin cambio") se rellenan con los valores actuales de la tarea.
+function aiMakeDraft(t) {
+  if (t.accion === 'editar') {
+    const f = aiFindTask(t.id);
+    if (!f) return null;
+    const o = f.task;
+    const orig = { nombre: o.name, curso_id: f.cid, fecha: o.deadline, hora: aiFrom12h(o.deadline_time), categoria: o.categoria || 'tarea', descripcion: o.description || '' };
+    const d = { accion: 'editar', id: o.id, orig };
+    Object.keys(orig).forEach(k => { d[k] = (t[k] === null || t[k] === undefined) ? orig[k] : t[k]; });
+    return d;
+  }
+  return {
+    accion: 'crear', nombre: t.nombre || '', curso_id: t.curso_id || '', fecha: t.fecha || '',
+    hora: t.hora || '', categoria: t.categoria || 'tarea', descripcion: t.descripcion || '',
+  };
+}
+
+const AI_FIELD_LABELS = { nombre: 'nombre', curso_id: 'curso', fecha: 'fecha', hora: 'hora', categoria: 'categoría', descripcion: 'descripción' };
+function aiChanges(d) {
+  return Object.keys(AI_FIELD_LABELS).filter(k => String(d[k] || '').trim() !== String(d.orig[k] || '').trim()).map(k => AI_FIELD_LABELS[k]);
+}
+
 // ── Enviar el texto a la IA ──
 async function aiSubmit() {
   if (_aiBusy || !aiCanUse()) return;
@@ -8039,22 +8095,17 @@ async function aiSubmit() {
         texto,
         calendario: aiBuildCalendar(),
         cursos: COURSES.map(c => ({ id: c.id, name: c.name })),
+        existentes: aiBuildExistentes(),
       }),
     });
     const data = await res.json().catch(() => ({ error: `Respuesta inválida (${res.status})` }));
     if (data.error) throw new Error(data.error);
     if (!data.tareas || !data.tareas.length) {
-      aiSetStatus(data.aviso || 'No encontré ninguna tarea en ese texto.', 'err');
+      aiSetStatus(data.aviso || 'No encontré nada que crear o editar en ese texto.', 'err');
       return;
     }
-    _aiDrafts = data.tareas.map(t => ({
-      nombre: t.nombre || '',
-      curso_id: t.curso_id || '',
-      fecha: t.fecha || '',
-      hora: t.hora || '',
-      categoria: t.categoria || 'tarea',
-      descripcion: t.descripcion || '',
-    }));
+    _aiDrafts = data.tareas.map(aiMakeDraft).filter(Boolean);
+    if (!_aiDrafts.length) { aiSetStatus(data.aviso || 'No pude identificar la tarea a editar.', 'err'); return; }
     aiSetStatus('');
     aiOpen(data.aviso || '');
   } catch (e) {
@@ -8085,9 +8136,10 @@ function aiRenderSlides() {
   aiEl('ai-track').innerHTML = _aiDrafts.map((d, i) => `
     <div class="ai-slide" data-i="${i}">
       <div class="ai-slide-top">
-        <span class="ai-slide-tag">Tarea ${i + 1}</span>
+        <span class="ai-slide-tag">${d.accion === 'editar' ? '✏️ Editando una tarea existente' : '🆕 Nueva tarea'}</span>
         <button class="ai-remove" type="button" onclick="aiRemove(${i})">🗑 Quitar</button>
       </div>
+      ${d.accion === 'editar' ? `<div class="ai-editnote">${aiChanges(d).length ? 'Cambia: <b>' + aiChanges(d).join(', ') + '</b>' : 'Sin cambios todavía'}</div>` : ''}
       <div class="form-group">
         <label class="form-label">Nombre</label>
         <input class="form-control ${d.nombre ? '' : 'ai-missing'}" data-f="nombre" type="text" value="${escHtml(d.nombre)}">
@@ -8131,7 +8183,11 @@ function aiUpdateNav() {
   aiEl('ai-prev').disabled = _aiIdx === 0;
   aiEl('ai-next').disabled = _aiIdx >= n - 1;
   aiEl('ai-prev').style.visibility = aiEl('ai-next').style.visibility = n > 1 ? 'visible' : 'hidden';
-  aiEl('ai-create').textContent = n === 1 ? '✓ Crear tarea' : `✓ Crear ${n} tareas`;
+  const nEd = _aiDrafts.filter(d => d.accion === 'editar').length;
+  aiEl('ai-create').textContent = nEd === 0
+    ? (n === 1 ? '✓ Crear tarea' : `✓ Crear ${n} tareas`)
+    : nEd === n ? (n === 1 ? '✓ Guardar cambios' : `✓ Guardar ${n} cambios`)
+    : `✓ Confirmar ${n}`;
 }
 
 function aiGo(i) {
@@ -8179,44 +8235,76 @@ async function aiCreateAll() {
   _aiBusy = true;
   const btn = aiEl('ai-create');
   btn.disabled = true;
-  btn.textContent = 'Creando…';
+  btn.textContent = 'Guardando…';
 
   const base = Date.now();
-  let created = 0;
+  let done = 0, created = 0, edited = 0;
   try {
     for (let i = 0; i < _aiDrafts.length; i++) {
       const d = _aiDrafts[i];
-      const t = {
-        id: base + i,
-        course_id: d.curso_id,
-        name: d.nombre.trim(),
-        deadline: d.fecha,
-        deadline_time: aiTo12h(d.hora),
-        description: d.descripcion.trim(),
-        entrega: '',
-        desc_images: [],
-        pdfs: { teoria: [], tarea: [], adjuntos: [] },
-        categoria: d.categoria,
-      };
-      await dbInsertTask(t);
-      if (!tasks[t.course_id]) tasks[t.course_id] = [];
-      tasks[t.course_id].push({
-        id: t.id, name: t.name, deadline: t.deadline, deadline_time: t.deadline_time,
-        description: t.description, entrega: '', desc_images: [], pdfs: t.pdfs,
-        categoria: t.categoria, flashcards: [],
-      });
-      created++;
+      if (d.accion === 'editar') {
+        const f = aiFindTask(d.id);
+        if (!f) throw new Error('la tarea a editar ya no existe');
+        const o = f.task;
+        const fields = {};
+        if (d.nombre.trim() !== d.orig.nombre) fields.name = d.nombre.trim();
+        if (d.curso_id !== d.orig.curso_id) fields.course_id = d.curso_id;
+        if (d.fecha !== d.orig.fecha) fields.deadline = d.fecha;
+        if (d.hora !== d.orig.hora) fields.deadline_time = aiTo12h(d.hora);
+        if (d.categoria !== d.orig.categoria) fields.categoria = d.categoria;
+        if (d.descripcion.trim() !== d.orig.descripcion.trim()) fields.description = d.descripcion.trim();
+        if (Object.keys(fields).length) {
+          await dbUpdateTask(d.id, fields);
+          if ('name' in fields) o.name = fields.name;
+          if ('deadline' in fields) o.deadline = fields.deadline;
+          if ('deadline_time' in fields) o.deadline_time = fields.deadline_time;
+          if ('categoria' in fields) o.categoria = fields.categoria;
+          if ('description' in fields) o.description = fields.description;
+          if ('course_id' in fields) {
+            tasks[f.cid] = tasks[f.cid].filter(x => x !== o);
+            if (!tasks[fields.course_id]) tasks[fields.course_id] = [];
+            tasks[fields.course_id].push(o);
+          }
+        }
+        edited++;
+      } else {
+        const t = {
+          id: base + i,
+          course_id: d.curso_id,
+          name: d.nombre.trim(),
+          deadline: d.fecha,
+          deadline_time: aiTo12h(d.hora),
+          description: d.descripcion.trim(),
+          entrega: '',
+          desc_images: [],
+          pdfs: { teoria: [], tarea: [], adjuntos: [] },
+          categoria: d.categoria,
+        };
+        await dbInsertTask(t);
+        if (!tasks[t.course_id]) tasks[t.course_id] = [];
+        tasks[t.course_id].push({
+          id: t.id, name: t.name, deadline: t.deadline, deadline_time: t.deadline_time,
+          description: t.description, entrega: '', desc_images: [], pdfs: t.pdfs,
+          categoria: t.categoria, flashcards: [],
+        });
+        created++;
+      }
+      done++;
     }
     aiClose();
     _aiDrafts = [];
     aiEl('ai-input').value = '';
     aiAutoGrow(aiEl('ai-input'));
-    aiSetStatus(`✓ ${created === 1 ? 'Se creó 1 tarea' : `Se crearon ${created} tareas`}`, 'ok');
+    const partes = [];
+    if (created) partes.push(created === 1 ? 'se creó 1 tarea' : `se crearon ${created} tareas`);
+    if (edited) partes.push(edited === 1 ? 'se editó 1 tarea' : `se editaron ${edited} tareas`);
+    const msg = partes.join(' y ');
+    aiSetStatus('✓ ' + msg.charAt(0).toUpperCase() + msg.slice(1), 'ok');
     setTimeout(() => { if (aiEl('ai-status').classList.contains('ok')) aiSetStatus(''); }, 5000);
   } catch (e) {
-    // las que ya se guardaron salen de la lista; quedan solo las pendientes
-    _aiDrafts.splice(0, created);
-    alert(`Se crearon ${created} y falló una: ${e.message}\nQuedan ${_aiDrafts.length} por confirmar.`);
+    // lo que ya se guardó sale de la lista; quedan solo las pendientes
+    _aiDrafts.splice(0, done);
+    alert(`Se guardaron ${done} y falló una: ${e.message}\nQuedan ${_aiDrafts.length} por confirmar.`);
     _aiIdx = 0;
     aiRenderSlides();
   }
@@ -8226,7 +8314,7 @@ async function aiCreateAll() {
 
   renderHome();
   const sc = aiEl('screen-course');
-  if (created && sc && sc.classList.contains('active') && activeCourseId) renderCourse(activeCourseId);
+  if (done && sc && sc.classList.contains('active') && activeCourseId) renderCourse(activeCourseId);
 }
 
 // ── Eventos (una sola vez) ──
